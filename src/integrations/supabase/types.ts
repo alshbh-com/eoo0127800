@@ -1,5 +1,42 @@
-npm warn exec The following package was not found and will be installed: supabase@2.98.2
-npm notice operation is not supported.
-npm notice operation is not supported.
-npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
-2026/05/10 22:38:33 Access token not provided. Supply an access token by running supabase login or setting the SUPABASE_ACCESS_TOKEN environment variable.
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+type GenericRow = Record<string, unknown>;
+interface GenericTable {
+  Row: GenericRow;
+  Insert: GenericRow;
+  Update: GenericRow;
+  Relationships: [];
+}
+
+export interface Database {
+  public: {
+    Tables: {
+      cities: GenericTable;
+      drivers: GenericTable;
+      messages: GenericTable;
+      notifications: GenericTable;
+      app_settings: GenericTable;
+      order_status_history: GenericTable;
+      orders: GenericTable;
+      profiles: GenericTable;
+      restaurants: GenericTable;
+      user_roles: GenericTable;
+    };
+    Views: Record<string, never>;
+    Functions: {
+      get_chat_contacts: { Args: Record<string, never>; Returns: { user_id: string; full_name: string; role: string }[] };
+      get_my_roles: { Args: Record<string, never>; Returns: { role: string }[] };
+      has_role: { Args: { _user_id: string; _role: string }; Returns: boolean };
+    };
+    Enums: {
+      app_role: "admin" | "restaurant" | "driver";
+      order_status: "pending" | "accepted" | "preparing" | "picked_up" | "on_the_way" | "delivered" | "cancelled" | "returned";
+    };
+    CompositeTypes: Record<string, never>;
+  };
+}
+
+export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
+export type TablesInsert<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Insert"];
+export type TablesUpdate<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Update"];
+export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T];
