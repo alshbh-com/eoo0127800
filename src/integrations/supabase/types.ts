@@ -14,16 +14,320 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cities: {
+        Row: {
+          created_at: string
+          delivery_price: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_price?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_price?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      drivers: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          current_lat: number | null
+          current_lng: number | null
+          id: string
+          is_active: boolean
+          is_online: boolean
+          location_updated_at: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+          vehicle_type: string | null
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
+          id?: string
+          is_active?: boolean
+          is_online?: boolean
+          location_updated_at?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_type?: string | null
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
+          id?: string
+          is_active?: boolean
+          is_online?: boolean
+          location_updated_at?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          order_id: string
+          status: Database["public"]["Enums"]["order_status"]
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          status: Database["public"]["Enums"]["order_status"]
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          customer_address: string
+          customer_name: string
+          customer_phone: string
+          delivered_at: string | null
+          delivery_price: number
+          driver_id: string | null
+          id: string
+          items_total: number
+          notes: string | null
+          order_number: string
+          restaurant_id: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number | null
+          updated_at: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          customer_address: string
+          customer_name: string
+          customer_phone: string
+          delivered_at?: string | null
+          delivery_price?: number
+          driver_id?: string | null
+          id?: string
+          items_total?: number
+          notes?: string | null
+          order_number?: string
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number | null
+          updated_at?: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          customer_address?: string
+          customer_name?: string
+          customer_phone?: string
+          delivered_at?: string | null
+          delivery_price?: number
+          driver_id?: string | null
+          id?: string
+          items_total?: number
+          notes?: string | null
+          order_number?: string
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          is_active: boolean
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id: string
+          is_active?: boolean
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      restaurants: {
+        Row: {
+          address: string | null
+          city_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_my_roles: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "restaurant" | "driver"
+      order_status:
+        | "pending"
+        | "accepted"
+        | "preparing"
+        | "picked_up"
+        | "on_the_way"
+        | "delivered"
+        | "cancelled"
+        | "returned"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +454,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "restaurant", "driver"],
+      order_status: [
+        "pending",
+        "accepted",
+        "preparing",
+        "picked_up",
+        "on_the_way",
+        "delivered",
+        "cancelled",
+        "returned",
+      ],
+    },
   },
 } as const
