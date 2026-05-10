@@ -68,6 +68,73 @@ export type Database = {
         }
         Relationships: []
       }
+      complaints: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          driver_id: string | null
+          id: string
+          order_id: string | null
+          resolved_at: string | null
+          restaurant_id: string | null
+          status: Database["public"]["Enums"]["complaint_status"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          resolved_at?: string | null
+          restaurant_id?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          resolved_at?: string | null
+          restaurant_id?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           city_id: string | null
@@ -447,6 +514,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "restaurant" | "driver"
+      complaint_status: "open" | "in_progress" | "resolved" | "rejected"
       order_status:
         | "pending"
         | "accepted"
@@ -456,6 +524,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "returned"
+        | "on_hold"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -584,6 +653,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "restaurant", "driver"],
+      complaint_status: ["open", "in_progress", "resolved", "rejected"],
       order_status: [
         "pending",
         "accepted",
@@ -593,6 +663,7 @@ export const Constants = {
         "delivered",
         "cancelled",
         "returned",
+        "on_hold",
       ],
     },
   },
