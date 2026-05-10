@@ -106,9 +106,10 @@ function Body() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    const patch: Record<string, unknown> = { status };
-    if (status === "delivered") patch.delivered_at = new Date().toISOString();
-    const { error } = await supabase.from("orders").update(patch).eq("id", id);
+    const patch = status === "delivered"
+      ? { status: status as Order["status"], delivered_at: new Date().toISOString() }
+      : { status: status as Order["status"] };
+    const { error } = await supabase.from("orders").update(patch as never).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(`Marked ${status}`);
   };
