@@ -1,6 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-type GenericRow = Record<string, unknown>;
+type GenericRow = Record<string, any>;
 interface GenericTable {
   Row: GenericRow;
   Insert: GenericRow;
