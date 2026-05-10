@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          app_name: string
+          commission_rate: number
+          currency: string
+          id: number
+          support_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_name?: string
+          commission_rate?: number
+          currency?: string
+          id?: number
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_name?: string
+          commission_rate?: number
+          currency?: string
+          id?: number
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cities: {
         Row: {
           created_at: string
@@ -118,6 +145,36 @@ export type Database = {
           read_at?: string | null
           recipient_id?: string
           sender_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
