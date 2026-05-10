@@ -59,12 +59,9 @@ function LoginPage() {
               دخول
             </Button>
           </form>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            ليس لديك حساب؟ <Link to="/signup" className="text-primary hover:underline">إنشاء حساب</Link>
-          </p>
         </Card>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          أول مستخدم يسجل يتم تعيينه كمسؤول النظام تلقائيًا.
+          الحسابات يتم إنشاؤها بواسطة المسؤول فقط.
         </p>
       </div>
     </div>
