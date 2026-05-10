@@ -14,23 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { LayoutDashboard, Plus, Truck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { STATUS_AR, STATUS_COLORS } from "@/lib/i18n";
 
 export const Route = createFileRoute("/restaurant")({
   component: RestaurantPage,
 });
 
-const navItems: NavItem[] = [{ to: "/restaurant", label: "Orders", icon: LayoutDashboard }];
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-warning/20 text-warning",
-  accepted: "bg-blue-500/20 text-blue-400",
-  preparing: "bg-blue-500/20 text-blue-400",
-  picked_up: "bg-purple-500/20 text-purple-400",
-  on_the_way: "bg-purple-500/20 text-purple-400",
-  delivered: "bg-success/20 text-success",
-  cancelled: "bg-destructive/20 text-destructive",
-  returned: "bg-muted text-muted-foreground",
-};
+const navItems: NavItem[] = [{ to: "/restaurant", label: "الطلبات", icon: LayoutDashboard }];
 
 interface City { id: string; name: string; delivery_price: number }
 interface Order {
@@ -45,7 +35,7 @@ function RestaurantPage() {
   if (!user) return <Navigate to="/login" />;
   if (!roles.includes("restaurant")) return <Navigate to="/" />;
   return (
-    <DashboardLayout title="Restaurant" items={navItems}>
+    <DashboardLayout title="مطعم" items={navItems}>
       <Body />
     </DashboardLayout>
   );
@@ -90,20 +80,20 @@ function Body() {
   };
 
   if (!restaurantId) {
-    return <Card className="p-8 text-center text-sm text-muted-foreground">Your restaurant profile is not set up yet. Contact admin.</Card>;
+    return <Card className="p-8 text-center text-sm text-muted-foreground">لم يتم إعداد ملف المطعم بعد. يرجى التواصل مع المسؤول.</Card>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Orders</h1>
-          <p className="text-sm text-muted-foreground">Manage your incoming orders.</p>
+          <h1 className="text-2xl font-bold">الطلبات</h1>
+          <p className="text-sm text-muted-foreground">إدارة طلبات مطعمك.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />New order</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="ml-2 h-4 w-4" />طلب جديد</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Create order</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>إنشاء طلب</DialogTitle></DialogHeader>
             <NewOrderForm restaurantId={restaurantId} cities={cities} onDone={() => { setOpen(false); loadOrders(restaurantId); }} />
           </DialogContent>
         </Dialog>
@@ -111,9 +101,9 @@ function Body() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Total orders", value: totals.count },
-          { label: "Delivered", value: totals.delivered },
-          { label: "Revenue", value: totals.revenue.toFixed(2) },
+          { label: "إجمالي الطلبات", value: totals.count },
+          { label: "تم التوصيل", value: totals.delivered },
+          { label: "الإيرادات", value: totals.revenue.toFixed(2) },
         ].map((c) => (
           <Card key={c.label} className="p-5">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{c.label}</div>
@@ -125,23 +115,23 @@ function Body() {
       <Card className="p-5 overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>#</TableHead><TableHead>Customer</TableHead><TableHead>Address</TableHead>
-            <TableHead>Total</TableHead><TableHead>Status</TableHead>
+            <TableHead>#</TableHead><TableHead>العميل</TableHead><TableHead>العنوان</TableHead>
+            <TableHead>الإجمالي</TableHead><TableHead>الحالة</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {orders.map((o) => (
               <TableRow key={o.id}>
-                <TableCell className="font-mono text-xs">{o.order_number}</TableCell>
+                <TableCell className="font-mono text-xs" dir="ltr">{o.order_number}</TableCell>
                 <TableCell>
                   <div className="font-medium">{o.customer_name}</div>
-                  <div className="text-xs text-muted-foreground">{o.customer_phone}</div>
+                  <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
                 </TableCell>
                 <TableCell className="max-w-[220px] truncate">{o.customer_address}</TableCell>
                 <TableCell>{Number(o.total).toFixed(2)}</TableCell>
-                <TableCell><Badge className={STATUS_COLORS[o.status]}>{o.status}</Badge></TableCell>
+                <TableCell><Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge></TableCell>
               </TableRow>
             ))}
-            {orders.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No orders yet</TableCell></TableRow>}
+            {orders.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">لا توجد طلبات</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
@@ -177,33 +167,33 @@ function NewOrderForm({ restaurantId, cities, onDone }: { restaurantId: string; 
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Order created");
+    toast.success("تم إنشاء الطلب");
     onDone();
   };
 
   return (
     <form onSubmit={submit} className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5"><Label>Customer name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
-        <div className="space-y-1.5"><Label>Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} required /></div>
+        <div className="space-y-1.5"><Label>اسم العميل</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
+        <div className="space-y-1.5"><Label>رقم الهاتف</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} required dir="ltr" /></div>
       </div>
-      <div className="space-y-1.5"><Label>Address</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
+      <div className="space-y-1.5"><Label>العنوان</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>City</Label>
+          <Label>المدينة</Label>
           <Select value={cityId} onValueChange={setCityId}>
-            <SelectTrigger><SelectValue placeholder="Select city" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="اختر المدينة" /></SelectTrigger>
             <SelectContent>{cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5"><Label>Items total</Label><Input type="number" step="0.01" value={itemsTotal} onChange={(e) => setItemsTotal(e.target.value)} required /></div>
+        <div className="space-y-1.5"><Label>قيمة الطلب</Label><Input type="number" step="0.01" value={itemsTotal} onChange={(e) => setItemsTotal(e.target.value)} required /></div>
       </div>
       <div className="rounded-md bg-muted p-3 text-sm">
-        <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>{Number(deliveryPrice).toFixed(2)}</span></div>
-        <div className="mt-1 flex justify-between font-semibold"><span>Total</span><span>{total.toFixed(2)}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">سعر التوصيل</span><span>{Number(deliveryPrice).toFixed(2)}</span></div>
+        <div className="mt-1 flex justify-between font-semibold"><span>الإجمالي</span><span>{total.toFixed(2)}</span></div>
       </div>
-      <div className="space-y-1.5"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-      <DialogFooter><Button type="submit" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create order</Button></DialogFooter>
+      <div className="space-y-1.5"><Label>ملاحظات</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+      <DialogFooter><Button type="submit" disabled={loading}>{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}إنشاء الطلب</Button></DialogFooter>
     </form>
   );
 }
