@@ -1,0 +1,81 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface Body {
+  email: string;
+  password: string;
+  full_name: string;
+  phone?: string;
+  role: "restaurant" | "driver";
+  city_id: string | null;
+  name: string;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return json({ error: "Missing auth" }, 401);
+
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Verify caller is admin
+    const callerClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
+    const { data: userData, error: userErr } = await callerClient.auth.getUser();
+    if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
+
+    const { data: roleRows } = await callerClient
+      .from("user_roles").select("role").eq("user_id", userData.user.id);
+    if (!roleRows?.some((r) => r.role === "admin")) return json({ error: "Forbidden" }, 403);
+
+    const body = (await req.json()) as Body;
+    if (!body.email || !body.password || !body.role) return json({ error: "Missing fields" }, 400);
+
+    const admin = createClient(url, service, { auth: { persistSession: false } });
+
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email: body.email,
+      password: body.password,
+      email_confirm: true,
+      user_metadata: { full_name: body.full_name, phone: body.phone ?? null },
+    });
+    if (createErr || !created.user) return json({ error: createErr?.message ?? "Create failed" }, 400);
+
+    const newUserId = created.user.id;
+
+    await admin.from("user_roles").insert({ user_id: newUserId, role: body.role });
+
+    if (body.role === "restaurant") {
+      await admin.from("restaurants").insert({
+        user_id: newUserId,
+        name: body.name,
+        phone: body.phone ?? null,
+        city_id: body.city_id,
+      });
+    } else if (body.role === "driver") {
+      await admin.from("drivers").insert({
+        user_id: newUserId,
+        phone: body.phone ?? null,
+        city_id: body.city_id,
+      });
+    }
+
+    return json({ ok: true, user_id: newUserId });
+  } catch (e) {
+    console.error(e);
+    return json({ error: e instanceof Error ? e.message : "Error" }, 500);
+  }
+});
+
+function json(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
