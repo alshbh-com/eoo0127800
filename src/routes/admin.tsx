@@ -299,15 +299,17 @@ function DriversTab() {
       </div>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>الهاتف</TableHead><TableHead>المدينة</TableHead><TableHead>الاتصال</TableHead><TableHead>الحالة</TableHead><TableHead className="w-40">إجراءات</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>الهاتف</TableHead><TableHead>الاتصال</TableHead><TableHead>الموقع</TableHead><TableHead>الحالة</TableHead><TableHead className="w-40">إجراءات</TableHead></TableRow></TableHeader>
           <TableBody>
             {items.map((d) => (
               <TableRow key={d.id}>
                 <TableCell dir="ltr">{d.phone ?? "—"}</TableCell>
-                <TableCell>{cities.find((c) => c.id === d.city_id)?.name ?? "—"}</TableCell>
                 <TableCell>
                   <span className={`inline-flex h-2 w-2 rounded-full ${d.is_online ? "bg-success" : "bg-muted-foreground/40"}`} />
                   <span className="mr-2 text-xs text-muted-foreground">{d.is_online ? "متصل" : "غير متصل"}</span>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground" dir="ltr">
+                  {d.current_lat && d.current_lng ? `${d.current_lat.toFixed(4)}, ${d.current_lng.toFixed(4)}` : "—"}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -785,15 +787,16 @@ function CreateUserForm({ role, cities, onDone }: { role: "restaurant" | "driver
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [cityId, setCityId] = useState<string>("");
+  const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
+  void cities; // city is chosen per-order by the restaurant, not at user creation
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-create-user", {
-        body: { phone, password, full_name: name, role, city_id: cityId || null, name },
+        body: { phone, password, full_name: name, role, name, address: role === "restaurant" ? address : null },
       });
       if (error) throw error;
       if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
@@ -809,13 +812,9 @@ function CreateUserForm({ role, cities, onDone }: { role: "restaurant" | "driver
       <div className="space-y-1.5"><Label>{role === "restaurant" ? "اسم المطعم" : "اسم المندوب"}</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
       <div className="space-y-1.5"><Label>رقم الهاتف</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07xxxxxxxx" dir="ltr" required /></div>
       <div className="space-y-1.5"><Label>كلمة المرور</Label><Input type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required dir="ltr" /></div>
-      <div className="space-y-1.5">
-        <Label>المدينة</Label>
-        <Select value={cityId} onValueChange={setCityId}>
-          <SelectTrigger><SelectValue placeholder="اختر المدينة" /></SelectTrigger>
-          <SelectContent>{cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
+      {role === "restaurant" && (
+        <div className="space-y-1.5"><Label>عنوان / موقع المطعم</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="مثال: شارع المعز - وسط البلد" /></div>
+      )}
       <DialogFooter>
         <Button type="submit" disabled={loading}>{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}إنشاء</Button>
       </DialogFooter>

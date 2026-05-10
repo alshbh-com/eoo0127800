@@ -10,8 +10,9 @@ interface Body {
   password: string;
   full_name: string;
   role: "restaurant" | "driver";
-  city_id: string | null;
+  city_id?: string | null;
   name: string;
+  address?: string | null;
 }
 
 function phoneToEmail(p: string) {
@@ -59,13 +60,14 @@ Deno.serve(async (req) => {
         user_id: newUserId,
         name: body.name,
         phone: phoneDigits,
-        city_id: body.city_id,
+        city_id: body.city_id ?? null,
+        address: body.address ?? null,
       });
     } else if (body.role === "driver") {
       await admin.from("drivers").insert({
         user_id: newUserId,
         phone: phoneDigits,
-        city_id: body.city_id,
+        city_id: body.city_id ?? null,
       });
     }
 
