@@ -178,7 +178,7 @@ function Body() {
               </TableRow></TableHeader>
               <TableBody>
                 {orders.map((o) => {
-                  const drv = drivers.find((d) => d.id === o.driver_id);
+                  const info = o.driver_id ? driverInfo[o.driver_id] : null;
                   return (
                   <TableRow key={o.id}>
                     <TableCell><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-gradient-primary px-2 text-sm font-bold text-primary-foreground shadow-soft">{o.daily_number ?? "—"}</span></TableCell>
@@ -187,7 +187,24 @@ function Body() {
                       <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
                     </TableCell>
                     <TableCell className="max-w-[220px] truncate">{o.customer_address}</TableCell>
-                    <TableCell className="text-xs" dir="ltr">{drv ? drv.label : <span className="text-muted-foreground">— لم يُعيَّن</span>}</TableCell>
+                    <TableCell>
+                      {info ? (
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium">{info.name}</div>
+                          <div className="flex gap-1">
+                            {info.phone && (
+                              <Button asChild size="sm" variant="outline" className="h-7 px-2 text-xs">
+                                <a href={`tel:${info.phone}`}>اتصال</a>
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs"
+                              onClick={() => { setChatTarget(info.user_id); setActiveTab("chat"); }}>
+                              رسالة
+                            </Button>
+                          </div>
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">— لم يُعيَّن</span>}
+                    </TableCell>
                     <TableCell className="font-semibold">{Number(o.total).toFixed(2)}</TableCell>
                     <TableCell><Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge></TableCell>
                   </TableRow>
