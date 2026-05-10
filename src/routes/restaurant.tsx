@@ -72,12 +72,20 @@ function Body() {
   };
 
   const loadDrivers = async () => {
-    const { data } = await supabase.from("drivers").select("id, phone, is_online, current_lat, current_lng");
+    const { data } = await supabase.from("drivers").select("id, user_id, phone, is_online, current_lat, current_lng");
     if (!data) return;
+    const userIds = data.map((d) => d.user_id).filter(Boolean) as string[];
+    const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+    const nameMap = new Map((profs ?? []).map((p) => [p.id, p.full_name as string]));
+    const info: Record<string, { name: string; phone: string | null }> = {};
+    data.forEach((d) => {
+      info[d.id] = { name: nameMap.get(d.user_id) || d.phone || "مندوب", phone: d.phone };
+    });
+    setDriverInfo(info);
     setDrivers(
       data.filter((d) => d.current_lat != null && d.current_lng != null).map((d) => ({
         id: d.id, lat: Number(d.current_lat), lng: Number(d.current_lng),
-        label: d.phone ?? d.id.slice(0, 8), online: !!d.is_online,
+        label: info[d.id].name, online: !!d.is_online,
       })),
     );
   };
