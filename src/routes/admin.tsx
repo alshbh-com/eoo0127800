@@ -47,7 +47,7 @@ interface Order {
   created_at: string;
 }
 
-const STATUSES = ["pending","accepted","preparing","picked_up","on_the_way","delivered","cancelled","returned"] as const;
+const STATUSES = ["pending","accepted","preparing","picked_up","on_the_way","on_hold","delivered","cancelled","returned"] as const;
 
 function AdminPage() {
   const { user, loading: authLoading, roles } = useAuth();
