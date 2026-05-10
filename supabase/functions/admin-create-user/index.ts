@@ -23,16 +23,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Missing auth" }, 401);
-    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized", detail: "Missing authorization header" }, 401);
+    }
 
     const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
     const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    const caller = createClient(url, anon, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: authHeader } },
+    });
     const admin = createClient(url, service, { auth: { persistSession: false } });
 
-    // Validate token via admin client (works even if session was rotated)
-    const { data: userData, error: userErr } = await admin.auth.getUser(token);
+    const { data: userData, error: userErr } = await caller.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized", detail: userErr?.message }, 401);
 
     const { data: roleRows } = await admin
