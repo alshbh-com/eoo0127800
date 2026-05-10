@@ -15,9 +15,8 @@ export function NotificationBell() {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (c: string, v: string) => { order: (c: string, o: { ascending: boolean }) => { limit: (n: number) => Promise<{ data: N[] | null }> } } } } })
-        .from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
-      if (data) setItems(data);
+      const { data } = await supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
+      if (data) setItems(data as unknown as N[]);
     };
     load();
     const ch = supabase.channel(`notif-${user.id}`)
@@ -31,13 +30,10 @@ export function NotificationBell() {
 
   const markAll = async () => {
     if (!user) return;
-    await (supabase as unknown as { from: (t: string) => { update: (v: object) => { eq: (c: string, v: string) => { is: (c: string, v: null) => Promise<unknown> } } } })
-      .from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", user.id).is("read_at", null);
+    await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", user.id).is("read_at", null);
   };
-
   const markOne = async (id: string) => {
-    await (supabase as unknown as { from: (t: string) => { update: (v: object) => { eq: (c: string, v: string) => Promise<unknown> } } })
-      .from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+    await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
   };
 
   return (
