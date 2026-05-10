@@ -585,108 +585,155 @@ function OrdersTab() {
   );
 }
 
-function AccountingTab() {
+function ReportsTab() {
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+  const [from, setFrom] = useState(weekAgo);
+  const [to, setTo] = useState(today);
+  const [applied, setApplied] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+  const apply = async () => {
+    setLoading(true);
+    const [o, r, d] = await Promise.all([
+      supabase.from("orders").select("*")
+        .gte("created_at", from + "T00:00:00")
+        .lte("created_at", to + "T23:59:59")
+        .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("*"),
       supabase.from("drivers").select("*"),
-    ]).then(([o, r, d]) => {
-      if (o.data) setOrders(o.data as Order[]);
-      if (r.data) setRestaurants(r.data as Restaurant[]);
-      if (d.data) setDrivers(d.data as Driver[]);
-    });
-  }, []);
+    ]);
+    if (o.data) setOrders(o.data as Order[]);
+    if (r.data) setRestaurants(r.data as Restaurant[]);
+    if (d.data) setDrivers(d.data as Driver[]);
+    setApplied(true);
+    setLoading(false);
+  };
 
-  const inRange = (o: Order) => {
-    if (from && new Date(o.created_at) < new Date(from)) return false;
-    if (to && new Date(o.created_at) > new Date(to + "T23:59:59")) return false;
-    return true;
+  const delivered = orders.filter((o) => o.status === "delivered");
+  const totals = {
+    orders: orders.length,
+    delivered: delivered.length,
+    cancelled: orders.filter((o) => o.status === "cancelled").length,
+    revenue: delivered.reduce((s, o) => s + Number(o.total ?? 0), 0),
+    items: delivered.reduce((s, o) => s + Number(o.items_total ?? 0), 0),
+    delivery: delivered.reduce((s, o) => s + Number(o.delivery_price ?? 0), 0),
   };
 
   const restaurantStats = restaurants.map((r) => {
-    const list = orders.filter((o) => o.restaurant_id === r.id && o.status === "delivered" && inRange(o));
+    const list = delivered.filter((o) => o.restaurant_id === r.id);
     return {
       المطعم: r.name,
-      الطلبات_المسلّمة: list.length,
-      إجمالي_المنتجات: list.reduce((s, o) => s + Number(o.items_total), 0).toFixed(2),
-      إجمالي_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price), 0).toFixed(2),
-      الإجمالي: list.reduce((s, o) => s + Number(o.total), 0).toFixed(2),
+      عدد_الطلبات: list.length,
+      إجمالي_المنتجات: list.reduce((s, o) => s + Number(o.items_total ?? 0), 0).toFixed(2),
+      إجمالي_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price ?? 0), 0).toFixed(2),
+      للمطعم_بدون_توصيل: list.reduce((s, o) => s + Number(o.items_total ?? 0), 0).toFixed(2),
+      الإجمالي_الكلي: list.reduce((s, o) => s + Number(o.total ?? 0), 0).toFixed(2),
     };
-  });
+  }).filter((s) => s.عدد_الطلبات > 0);
 
   const driverStats = drivers.map((d) => {
-    const list = orders.filter((o) => o.driver_id === d.id && o.status === "delivered" && inRange(o));
+    const list = delivered.filter((o) => o.driver_id === d.id);
     return {
       المندوب: d.phone ?? d.id.slice(0, 8),
-      الطلبات: list.length,
-      أتعاب_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price), 0).toFixed(2),
+      عدد_التوصيلات: list.length,
+      أتعاب_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price ?? 0), 0).toFixed(2),
     };
-  });
+  }).filter((s) => s.عدد_التوصيلات > 0);
 
   return (
     <div className="space-y-4">
-      <Card className="p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div><Label className="text-xs">من</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" /></div>
-          <div><Label className="text-xs">إلى</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" /></div>
-          <Button variant="outline" onClick={() => { setFrom(""); setTo(""); }}>مسح</Button>
+      <Card className="p-5 shadow-soft">
+        <div className="mb-3 text-lg font-bold text-gradient-primary">فلتر التقارير</div>
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
+          <div><Label className="text-xs">من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" /></div>
+          <div><Label className="text-xs">إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" /></div>
+          <div className="flex items-end"><Button onClick={apply} disabled={loading} className="bg-gradient-primary shadow-pop">{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}عرض التقرير</Button></div>
+          <div className="flex items-end"><Button variant="outline" onClick={() => { setFrom(weekAgo); setTo(today); }}>آخر 7 أيام</Button></div>
         </div>
       </Card>
 
-      <Card className="p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="font-semibold">حسابات المطاعم</div>
-          <Button variant="outline" size="sm" onClick={() => downloadCSV("restaurants-accounting.csv", restaurantStats)}>
-            <Download className="ml-2 h-4 w-4" />تصدير
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow><TableHead>المطعم</TableHead><TableHead>الطلبات</TableHead><TableHead>منتجات</TableHead><TableHead>توصيل</TableHead><TableHead>الإجمالي</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {restaurantStats.map((s) => (
-                <TableRow key={s.المطعم}>
-                  <TableCell className="font-medium">{s.المطعم}</TableCell>
-                  <TableCell>{s.الطلبات_المسلّمة}</TableCell>
-                  <TableCell>{s.إجمالي_المنتجات}</TableCell>
-                  <TableCell>{s.إجمالي_التوصيل}</TableCell>
-                  <TableCell className="font-semibold">{s.الإجمالي}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      {!applied && (
+        <Card className="p-12 text-center text-muted-foreground">
+          اختر الفترة الزمنية ثم اضغط <span className="font-semibold text-foreground">عرض التقرير</span> لظهور الإحصائيات.
+        </Card>
+      )}
 
-      <Card className="p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="font-semibold">مستحقات المندوبين</div>
-          <Button variant="outline" size="sm" onClick={() => downloadCSV("drivers-accounting.csv", driverStats)}>
-            <Download className="ml-2 h-4 w-4" />تصدير
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow><TableHead>المندوب</TableHead><TableHead>الطلبات</TableHead><TableHead>أتعاب التوصيل</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {driverStats.map((s) => (
-                <TableRow key={s.المندوب}>
-                  <TableCell dir="ltr">{s.المندوب}</TableCell>
-                  <TableCell>{s.الطلبات}</TableCell>
-                  <TableCell className="font-semibold">{s.أتعاب_التوصيل}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      {applied && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "إجمالي الطلبات", value: totals.orders, cls: "bg-gradient-primary" },
+              { label: "تم التوصيل", value: totals.delivered, cls: "bg-gradient-success" },
+              { label: "الإيرادات", value: totals.revenue.toFixed(2), cls: "bg-gradient-warm" },
+              { label: "أتعاب التوصيل", value: totals.delivery.toFixed(2), cls: "bg-gradient-cool" },
+            ].map((c) => (
+              <Card key={c.label} className={`${c.cls} p-5 border-0 shadow-pop`}>
+                <div className="text-xs uppercase tracking-wider opacity-90">{c.label}</div>
+                <div className="mt-2 text-3xl font-extrabold">{c.value}</div>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-5 shadow-soft">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-lg font-bold">حسابات المطاعم</div>
+              <Button variant="outline" size="sm" onClick={() => downloadCSV("restaurants-report.csv", restaurantStats)}>
+                <Download className="ml-2 h-4 w-4" />تصدير
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>المطعم</TableHead><TableHead>الطلبات</TableHead>
+                  <TableHead>قيمة المنتجات</TableHead><TableHead>التوصيل</TableHead>
+                  <TableHead>للمطعم (بدون توصيل)</TableHead><TableHead>الإجمالي</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {restaurantStats.map((s) => (
+                    <TableRow key={s.المطعم}>
+                      <TableCell className="font-medium">{s.المطعم}</TableCell>
+                      <TableCell><Badge className="bg-gradient-primary">{s.عدد_الطلبات}</Badge></TableCell>
+                      <TableCell>{s.إجمالي_المنتجات}</TableCell>
+                      <TableCell>{s.إجمالي_التوصيل}</TableCell>
+                      <TableCell className="font-bold text-success">{s.للمطعم_بدون_توصيل}</TableCell>
+                      <TableCell className="font-semibold">{s.الإجمالي_الكلي}</TableCell>
+                    </TableRow>
+                  ))}
+                  {restaurantStats.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground">لا توجد بيانات</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
+          <Card className="p-5 shadow-soft">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-lg font-bold">مستحقات المندوبين</div>
+              <Button variant="outline" size="sm" onClick={() => downloadCSV("drivers-report.csv", driverStats)}>
+                <Download className="ml-2 h-4 w-4" />تصدير
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>المندوب</TableHead><TableHead>عدد التوصيلات</TableHead><TableHead>أتعاب التوصيل</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {driverStats.map((s) => (
+                    <TableRow key={s.المندوب}>
+                      <TableCell dir="ltr">{s.المندوب}</TableCell>
+                      <TableCell><Badge className="bg-gradient-cool">{s.عدد_التوصيلات}</Badge></TableCell>
+                      <TableCell className="font-semibold text-success">{s.أتعاب_التوصيل}</TableCell>
+                    </TableRow>
+                  ))}
+                  {driverStats.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-sm text-muted-foreground">لا توجد بيانات</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
