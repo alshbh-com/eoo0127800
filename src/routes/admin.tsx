@@ -19,10 +19,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import {
   LayoutDashboard, MapPin, Users, Package, Plus, Trash2, Truck, Loader2,
   Map as MapIcon, MessagesSquare, Eye, KeyRound, Search, Download, Settings as SettingsIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_AR, STATUS_COLORS } from "@/lib/i18n";
 import { ChatPanel } from "@/components/chat-panel";
+import { ComplaintsList } from "@/components/complaints";
 import { useNotificationPermission, notify } from "@/lib/notifications";
 import { downloadCSV } from "@/lib/export";
 
@@ -45,7 +47,7 @@ interface Order {
   created_at: string;
 }
 
-const STATUSES = ["pending","accepted","preparing","picked_up","on_the_way","delivered","cancelled","returned"] as const;
+const STATUSES = ["pending","accepted","preparing","picked_up","on_the_way","on_hold","delivered","cancelled","returned"] as const;
 
 function AdminPage() {
   const { user, loading: authLoading, roles } = useAuth();
@@ -86,6 +88,7 @@ function AdminContent() {
           <TabsTrigger value="cities"><MapPin className="ml-2 h-4 w-4" />المدن</TabsTrigger>
           <TabsTrigger value="restaurants"><Users className="ml-2 h-4 w-4" />المطاعم</TabsTrigger>
           <TabsTrigger value="drivers"><Truck className="ml-2 h-4 w-4" />المندوبين</TabsTrigger>
+          <TabsTrigger value="complaints"><AlertTriangle className="ml-2 h-4 w-4" />الشكاوى</TabsTrigger>
           <TabsTrigger value="settings"><SettingsIcon className="ml-2 h-4 w-4" />الإعدادات</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="mt-4"><OrdersTab /></TabsContent>
@@ -95,6 +98,7 @@ function AdminContent() {
         <TabsContent value="cities" className="mt-4"><CitiesTab /></TabsContent>
         <TabsContent value="restaurants" className="mt-4"><RestaurantsTab /></TabsContent>
         <TabsContent value="drivers" className="mt-4"><DriversTab /></TabsContent>
+        <TabsContent value="complaints" className="mt-4"><ComplaintsList mode="admin" /></TabsContent>
         <TabsContent value="settings" className="mt-4"><SettingsTab /></TabsContent>
       </Tabs>
     </div>

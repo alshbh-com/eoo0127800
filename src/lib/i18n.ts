@@ -8,6 +8,7 @@ export const STATUS_AR: Record<string, string> = {
   delivered: "تم التوصيل",
   cancelled: "ملغي",
   returned: "مرتجع",
+  on_hold: "معلّق",
 };
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -19,4 +20,5 @@ export const STATUS_COLORS: Record<string, string> = {
   delivered: "bg-success/20 text-success",
   cancelled: "bg-destructive/20 text-destructive",
   returned: "bg-muted text-muted-foreground",
+  on_hold: "bg-amber-500/20 text-amber-500",
 };

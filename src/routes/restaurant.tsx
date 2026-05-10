@@ -13,10 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { LayoutDashboard, Plus, Truck, Loader2, Map as MapIcon, MessagesSquare, UtensilsCrossed, Trash2, X } from "lucide-react";
+import { LayoutDashboard, Plus, Truck, Loader2, Map as MapIcon, MessagesSquare, UtensilsCrossed, Trash2, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_AR, STATUS_COLORS } from "@/lib/i18n";
 import { ChatPanel } from "@/components/chat-panel";
+import { ComplaintsList } from "@/components/complaints";
 import { DriversMap, type MapDriver } from "@/components/drivers-map";
 import { useNotificationPermission, notify } from "@/lib/notifications";
 
@@ -152,6 +153,7 @@ function Body() {
           <TabsTrigger value="orders"><LayoutDashboard className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
           <TabsTrigger value="products"><UtensilsCrossed className="ml-2 h-4 w-4" />القائمة</TabsTrigger>
           <TabsTrigger value="map"><MapIcon className="ml-2 h-4 w-4" />تتبع المندوبين</TabsTrigger>
+          <TabsTrigger value="complaints"><AlertTriangle className="ml-2 h-4 w-4" />الشكاوى</TabsTrigger>
           <TabsTrigger value="chat"><MessagesSquare className="ml-2 h-4 w-4" />المحادثات</TabsTrigger>
         </TabsList>
 
@@ -195,6 +197,10 @@ function Body() {
             <div className="mb-2 text-sm text-muted-foreground">المندوبين النشطين على الخريطة ({drivers.length})</div>
             <DriversMap drivers={drivers} />
           </Card>
+        </TabsContent>
+
+        <TabsContent value="complaints" className="mt-4">
+          <ComplaintsList mode="restaurant" restaurantId={restaurantId} />
         </TabsContent>
 
         <TabsContent value="chat" className="mt-4">

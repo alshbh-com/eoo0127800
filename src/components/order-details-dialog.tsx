@@ -11,11 +11,12 @@ interface Order {
   customer_address: string; items_total: number; delivery_price: number; total: number;
   status: string; notes: string | null; created_at: string; delivered_at: string | null;
 }
-interface History { id: string; status: string; created_at: string }
+interface History { id: string; status: string; created_at: string; changed_by: string | null }
 
 export function OrderDetailsDialog({ orderId, open, onOpenChange }: { orderId: string | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [history, setHistory] = useState<History[]>([]);
+  const [actors, setActors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!orderId || !open) return;
@@ -25,7 +26,19 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange }: { orderId: s
         supabase.from("order_status_history").select("*").eq("order_id", orderId).order("created_at", { ascending: true }),
       ]);
       if (o.data) setOrder(o.data as Order);
-      if (h.data) setHistory(h.data as History[]);
+      if (h.data) {
+        const hist = h.data as History[];
+        setHistory(hist);
+        const ids = Array.from(new Set(hist.map((x) => x.changed_by).filter((x): x is string => !!x)));
+        if (ids.length > 0) {
+          const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+          if (profs) {
+            const map: Record<string, string> = {};
+            (profs as { id: string; full_name: string }[]).forEach((p) => { map[p.id] = p.full_name || "—"; });
+            setActors(map);
+          }
+        }
+      }
     };
     load();
   }, [orderId, open]);
@@ -66,12 +79,17 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange }: { orderId: s
             </div>
             <Separator />
             <div>
-              <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Clock className="h-3 w-3" />سجل الحالات</div>
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Clock className="h-3 w-3" />سجل الحالات (Activity Log)</div>
               <div className="space-y-2">
                 {history.length === 0 && <div className="text-xs text-muted-foreground">لا يوجد سجل</div>}
                 {history.map((h) => (
                   <div key={h.id} className="flex items-center justify-between rounded-md border p-2">
-                    <Badge variant="outline" className={STATUS_COLORS[h.status]}>{STATUS_AR[h.status] ?? h.status}</Badge>
+                    <div className="flex flex-col gap-0.5">
+                      <Badge variant="outline" className={STATUS_COLORS[h.status]}>{STATUS_AR[h.status] ?? h.status}</Badge>
+                      {h.changed_by && actors[h.changed_by] && (
+                        <span className="text-[10px] text-muted-foreground">بواسطة: {actors[h.changed_by]}</span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-muted-foreground" dir="ltr">{new Date(h.created_at).toLocaleString()}</span>
                   </div>
                 ))}
