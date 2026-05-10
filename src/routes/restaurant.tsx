@@ -77,9 +77,9 @@ function Body() {
     const userIds = data.map((d) => d.user_id).filter(Boolean) as string[];
     const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
     const nameMap = new Map((profs ?? []).map((p) => [p.id, p.full_name as string]));
-    const info: Record<string, { name: string; phone: string | null }> = {};
+    const info: Record<string, { name: string; phone: string | null; user_id: string }> = {};
     data.forEach((d) => {
-      info[d.id] = { name: nameMap.get(d.user_id) || d.phone || "مندوب", phone: d.phone };
+      info[d.id] = { name: nameMap.get(d.user_id) || d.phone || "مندوب", phone: d.phone, user_id: d.user_id };
     });
     setDriverInfo(info);
     setDrivers(
