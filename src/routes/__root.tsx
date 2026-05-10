@@ -9,8 +9,8 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="text-center">
         <h1 className="text-7xl font-bold">404</h1>
-        <p className="mt-2 text-muted-foreground">Page not found</p>
-        <Link to="/" className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-primary-foreground">Home</Link>
+        <p className="mt-2 text-muted-foreground">الصفحة غير موجودة</p>
+        <Link to="/" className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-primary-foreground">الرئيسية</Link>
       </div>
     </div>
   );
@@ -22,9 +22,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="text-center">
-        <h1 className="text-xl font-semibold">Something went wrong</h1>
+        <h1 className="text-xl font-semibold">حدث خطأ ما</h1>
         <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-        <button onClick={() => { router.invalidate(); reset(); }} className="mt-6 rounded-md bg-primary px-4 py-2 text-primary-foreground">Retry</button>
+        <button onClick={() => { router.invalidate(); reset(); }} className="mt-6 rounded-md bg-primary px-4 py-2 text-primary-foreground">إعادة المحاولة</button>
       </div>
     </div>
   );
@@ -35,10 +35,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Dispatch — Delivery Management" },
-      { name: "description", content: "Multi-user delivery management system for admins, restaurants and drivers" },
+      { title: "O&R — نظام إدارة الدليفري" },
+      { name: "description", content: "نظام احترافي لإدارة الطلبات والمندوبين والمطاعم" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -48,7 +53,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <head><HeadContent /></head>
       <body>{children}<Scripts /></body>
     </html>
@@ -61,7 +66,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Outlet />
-        <Toaster richColors position="top-center" />
+        <Toaster richColors position="top-center" dir="rtl" />
       </AuthProvider>
     </QueryClientProvider>
   );

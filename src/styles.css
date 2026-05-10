@@ -80,5 +80,8 @@
 @layer base {
   * { border-color: var(--color-border); }
   html, body { background-color: var(--color-background); color: var(--color-foreground); }
-  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { font-family: "Cairo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
 }
+
+/* Leaflet markers in dark theme */
+.leaflet-container { background: var(--muted); border-radius: var(--radius); }

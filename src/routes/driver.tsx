@@ -10,22 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LayoutDashboard, MapPin, Phone, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { STATUS_AR, STATUS_COLORS } from "@/lib/i18n";
 
 export const Route = createFileRoute("/driver")({
   component: DriverPage,
 });
 
-const navItems: NavItem[] = [{ to: "/driver", label: "My orders", icon: LayoutDashboard }];
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-warning/20 text-warning",
-  accepted: "bg-blue-500/20 text-blue-400",
-  preparing: "bg-blue-500/20 text-blue-400",
-  picked_up: "bg-purple-500/20 text-purple-400",
-  on_the_way: "bg-purple-500/20 text-purple-400",
-  delivered: "bg-success/20 text-success",
-  cancelled: "bg-destructive/20 text-destructive",
-};
+const navItems: NavItem[] = [{ to: "/driver", label: "طلباتي", icon: LayoutDashboard }];
 
 const NEXT_STATUS: Record<string, string[]> = {
   accepted: ["preparing", "picked_up", "cancelled"],
@@ -46,7 +37,7 @@ function DriverPage() {
   if (!user) return <Navigate to="/login" />;
   if (!roles.includes("driver")) return <Navigate to="/" />;
   return (
-    <DashboardLayout title="Driver" items={navItems}>
+    <DashboardLayout title="مندوب" items={navItems}>
       <Body />
     </DashboardLayout>
   );
@@ -57,10 +48,19 @@ function Body() {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const prevOrderIds = useState(new Set<string>())[0];
 
   const loadOrders = async (did: string) => {
     const { data } = await supabase.from("orders").select("*").eq("driver_id", did).order("created_at", { ascending: false });
-    if (data) setOrders(data as Order[]);
+    if (!data) return;
+    // notify on new orders
+    data.forEach((o) => {
+      if (!prevOrderIds.has(o.id) && prevOrderIds.size > 0) {
+        toast.info(`طلب جديد: ${o.order_number}`);
+      }
+      prevOrderIds.add(o.id);
+    });
+    setOrders(data as Order[]);
   };
 
   useEffect(() => {
@@ -81,7 +81,6 @@ function Body() {
     return () => { ch.unsubscribe(); };
   }, [driverId]);
 
-  // Live location push
   useEffect(() => {
     if (!driverId || !isOnline) return;
     if (!("geolocation" in navigator)) return;
@@ -111,7 +110,7 @@ function Body() {
       : { status: status as Order["status"] };
     const { error } = await supabase.from("orders").update(patch as never).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success(`Marked ${status}`);
+    toast.success(`تم التحديث: ${STATUS_AR[status] ?? status}`);
   };
 
   const totals = {
@@ -121,28 +120,28 @@ function Body() {
   };
 
   if (!driverId) {
-    return <Card className="p-8 text-center text-sm text-muted-foreground">Your driver profile is not set up yet. Contact admin.</Card>;
+    return <Card className="p-8 text-center text-sm text-muted-foreground">لم يتم إعداد ملف المندوب بعد. يرجى التواصل مع المسؤول.</Card>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">My deliveries</h1>
-          <p className="text-sm text-muted-foreground">Track and update your assigned orders.</p>
+          <h1 className="text-2xl font-bold">طلباتي</h1>
+          <p className="text-sm text-muted-foreground">تابع وحدّث حالة طلباتك المعينة.</p>
         </div>
         <Card className="flex items-center gap-3 px-4 py-2">
           <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-success" : "bg-muted-foreground/40"}`} />
-          <span className="text-sm">{isOnline ? "Online" : "Offline"}</span>
+          <span className="text-sm">{isOnline ? "متصل" : "غير متصل"}</span>
           <Switch checked={isOnline} onCheckedChange={toggleOnline} />
         </Card>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Active", value: totals.active },
-          { label: "Delivered", value: totals.delivered },
-          { label: "Earnings", value: totals.earnings.toFixed(2) },
+          { label: "نشط", value: totals.active },
+          { label: "تم التوصيل", value: totals.delivered },
+          { label: "الأرباح", value: totals.earnings.toFixed(2) },
         ].map((c) => (
           <Card key={c.label} className="p-5">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{c.label}</div>
@@ -159,13 +158,13 @@ function Body() {
             <Card key={o.id} className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="font-mono text-xs text-muted-foreground">{o.order_number}</div>
+                  <div className="font-mono text-xs text-muted-foreground" dir="ltr">{o.order_number}</div>
                   <div className="mt-1 text-lg font-semibold">{o.customer_name}</div>
                 </div>
-                <Badge className={STATUS_COLORS[o.status]}>{o.status}</Badge>
+                <Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge>
               </div>
               <div className="mt-3 space-y-2 text-sm">
-                <a href={`tel:${o.customer_phone}`} className="flex items-center gap-2 text-primary hover:underline">
+                <a href={`tel:${o.customer_phone}`} className="flex items-center gap-2 text-primary hover:underline" dir="ltr">
                   <Phone className="h-4 w-4" />{o.customer_phone}
                 </a>
                 <a href={mapsHref} target="_blank" rel="noreferrer" className="flex items-start gap-2 text-primary hover:underline">
@@ -174,28 +173,27 @@ function Body() {
                 {o.notes && <p className="text-muted-foreground">{o.notes}</p>}
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
-                <span className="text-muted-foreground">Collect</span>
+                <span className="text-muted-foreground">المبلغ المستحق</span>
                 <span className="font-bold">{Number(o.total).toFixed(2)}</span>
               </div>
               {next.length > 0 && (
                 <div className="mt-3 flex gap-2">
-                  {o.status === "pending" || o.status === "accepted" ? null : null}
                   <Select onValueChange={(v) => updateStatus(o.id, v)}>
-                    <SelectTrigger><SelectValue placeholder="Update status…" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="تحديث الحالة…" /></SelectTrigger>
                     <SelectContent>
-                      {next.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {next.map((s) => <SelectItem key={s} value={s}>{STATUS_AR[s] ?? s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               )}
               {o.status === "pending" && (
-                <Button className="mt-3 w-full" onClick={() => updateStatus(o.id, "accepted")}>Accept order</Button>
+                <Button className="mt-3 w-full" onClick={() => updateStatus(o.id, "accepted")}>قبول الطلب</Button>
               )}
             </Card>
           );
         })}
         {orders.length === 0 && (
-          <Card className="p-8 text-center text-sm text-muted-foreground md:col-span-2">No assigned orders.</Card>
+          <Card className="p-8 text-center text-sm text-muted-foreground md:col-span-2">لا توجد طلبات معينة لك.</Card>
         )}
       </div>
     </div>

@@ -6,13 +6,16 @@ const corsHeaders = {
 };
 
 interface Body {
-  email: string;
+  phone: string;
   password: string;
   full_name: string;
-  phone?: string;
   role: "restaurant" | "driver";
   city_id: string | null;
   name: string;
+}
+
+function phoneToEmail(p: string) {
+  return `${p.replace(/\D+/g, "")}@or.app`;
 }
 
 Deno.serve(async (req) => {
@@ -25,7 +28,6 @@ Deno.serve(async (req) => {
     const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify caller is admin
     const callerClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
     const { data: userData, error: userErr } = await callerClient.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
@@ -35,15 +37,16 @@ Deno.serve(async (req) => {
     if (!roleRows?.some((r) => r.role === "admin")) return json({ error: "Forbidden" }, 403);
 
     const body = (await req.json()) as Body;
-    if (!body.email || !body.password || !body.role) return json({ error: "Missing fields" }, 400);
+    if (!body.phone || !body.password || !body.role) return json({ error: "Missing fields" }, 400);
 
+    const phoneDigits = body.phone.replace(/\D+/g, "");
     const admin = createClient(url, service, { auth: { persistSession: false } });
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email: body.email,
+      email: phoneToEmail(phoneDigits),
       password: body.password,
       email_confirm: true,
-      user_metadata: { full_name: body.full_name, phone: body.phone ?? null },
+      user_metadata: { full_name: body.full_name, phone: phoneDigits },
     });
     if (createErr || !created.user) return json({ error: createErr?.message ?? "Create failed" }, 400);
 
@@ -55,13 +58,13 @@ Deno.serve(async (req) => {
       await admin.from("restaurants").insert({
         user_id: newUserId,
         name: body.name,
-        phone: body.phone ?? null,
+        phone: phoneDigits,
         city_id: body.city_id,
       });
     } else if (body.role === "driver") {
       await admin.from("drivers").insert({
         user_id: newUserId,
-        phone: body.phone ?? null,
+        phone: phoneDigits,
         city_id: body.city_id,
       });
     }
