@@ -153,6 +153,7 @@ function Body() {
           <TabsTrigger value="orders"><LayoutDashboard className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
           <TabsTrigger value="products"><UtensilsCrossed className="ml-2 h-4 w-4" />القائمة</TabsTrigger>
           <TabsTrigger value="map"><MapIcon className="ml-2 h-4 w-4" />تتبع المندوبين</TabsTrigger>
+          <TabsTrigger value="complaints"><AlertTriangle className="ml-2 h-4 w-4" />الشكاوى</TabsTrigger>
           <TabsTrigger value="chat"><MessagesSquare className="ml-2 h-4 w-4" />المحادثات</TabsTrigger>
         </TabsList>
 
@@ -196,6 +197,10 @@ function Body() {
             <div className="mb-2 text-sm text-muted-foreground">المندوبين النشطين على الخريطة ({drivers.length})</div>
             <DriversMap drivers={drivers} />
           </Card>
+        </TabsContent>
+
+        <TabsContent value="complaints" className="mt-4">
+          <ComplaintsList mode="restaurant" restaurantId={restaurantId} />
         </TabsContent>
 
         <TabsContent value="chat" className="mt-4">
