@@ -25,14 +25,6 @@ function LoginPage() {
     setLoading(true);
     try {
       await signIn(phoneToEmail(phone), password);
-      const { data: anyAdmin } = await supabase.from("user_roles").select("id").eq("role", "admin").limit(1);
-      if (!anyAdmin || anyAdmin.length === 0) {
-        const { data: u } = await supabase.auth.getUser();
-        if (u.user) {
-          await supabase.from("user_roles").insert({ user_id: u.user.id, role: "admin" });
-          toast.success("تم تعيينك كمسؤول (أول مستخدم)");
-        }
-      }
       navigate({ to: "/" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "فشل تسجيل الدخول");
