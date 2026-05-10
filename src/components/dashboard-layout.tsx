@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { NotificationBell } from "@/components/notification-bell";
 
 export interface NavItem {
   to: string;
@@ -76,13 +77,17 @@ export function DashboardLayout({ title, items, children }: Props) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:hidden">
-          <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur">
+          <div className="flex items-center gap-2 md:hidden">
             <span className="flex h-7 w-7 items-center justify-center rounded bg-primary text-primary-foreground text-xs font-extrabold">O&amp;R</span>
             <span className="font-semibold">O&amp;R</span>
             <span className="text-xs text-muted-foreground">· {title}</span>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}><LogOut className="h-4 w-4" /></Button>
+          <div className="hidden text-sm text-muted-foreground md:block">{title}</div>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="md:hidden"><LogOut className="h-4 w-4" /></Button>
+          </div>
         </header>
         <nav className="fixed bottom-0 left-0 right-0 z-10 flex border-t border-border bg-background md:hidden">
           {items.slice(0, 5).map((item) => {
