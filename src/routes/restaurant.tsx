@@ -8,13 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { LayoutDashboard, Plus, Truck, Loader2 } from "lucide-react";
+import { LayoutDashboard, Plus, Truck, Loader2, Map as MapIcon, MessagesSquare } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_AR, STATUS_COLORS } from "@/lib/i18n";
+import { ChatPanel } from "@/components/chat-panel";
+import { DriversMap, type MapDriver } from "@/components/drivers-map";
+import { useNotificationPermission, notify } from "@/lib/notifications";
 
 export const Route = createFileRoute("/restaurant")({
   component: RestaurantPage,
@@ -46,11 +50,25 @@ function Body() {
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [drivers, setDrivers] = useState<MapDriver[]>([]);
   const [open, setOpen] = useState(false);
+
+  useNotificationPermission();
 
   const loadOrders = async (rid: string) => {
     const { data } = await supabase.from("orders").select("*").eq("restaurant_id", rid).order("created_at", { ascending: false });
     if (data) setOrders(data as Order[]);
+  };
+
+  const loadDrivers = async () => {
+    const { data } = await supabase.from("drivers").select("id, phone, is_online, current_lat, current_lng");
+    if (!data) return;
+    setDrivers(
+      data.filter((d) => d.current_lat != null && d.current_lng != null).map((d) => ({
+        id: d.id, lat: Number(d.current_lat), lng: Number(d.current_lng),
+        label: d.phone ?? d.id.slice(0, 8), online: !!d.is_online,
+      })),
+    );
   };
 
   useEffect(() => {
@@ -62,6 +80,7 @@ function Body() {
       loadOrders(r.id);
       const { data: c } = await supabase.from("cities").select("*").order("name");
       if (c) setCities(c);
+      loadDrivers();
     })();
   }, [user]);
 
@@ -69,8 +88,16 @@ function Body() {
     if (!restaurantId) return;
     const ch = supabase.channel(`rest-orders-${restaurantId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurantId}` },
-        () => loadOrders(restaurantId)).subscribe();
-    return () => { ch.unsubscribe(); };
+        (p) => {
+          loadOrders(restaurantId);
+          if (p.eventType === "UPDATE") {
+            const o = p.new as { order_number?: string; status?: string };
+            if (o.status) notify("تحديث طلب", `${o.order_number}: ${STATUS_AR[o.status] ?? o.status}`);
+          }
+        }).subscribe();
+    const dch = supabase.channel("rest-drivers")
+      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, loadDrivers).subscribe();
+    return () => { ch.unsubscribe(); dch.unsubscribe(); };
   }, [restaurantId]);
 
   const totals = {
@@ -112,29 +139,50 @@ function Body() {
         ))}
       </div>
 
-      <Card className="p-5 overflow-x-auto">
-        <Table>
-          <TableHeader><TableRow>
-            <TableHead>#</TableHead><TableHead>العميل</TableHead><TableHead>العنوان</TableHead>
-            <TableHead>الإجمالي</TableHead><TableHead>الحالة</TableHead>
-          </TableRow></TableHeader>
-          <TableBody>
-            {orders.map((o) => (
-              <TableRow key={o.id}>
-                <TableCell className="font-mono text-xs" dir="ltr">{o.order_number}</TableCell>
-                <TableCell>
-                  <div className="font-medium">{o.customer_name}</div>
-                  <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
-                </TableCell>
-                <TableCell className="max-w-[220px] truncate">{o.customer_address}</TableCell>
-                <TableCell>{Number(o.total).toFixed(2)}</TableCell>
-                <TableCell><Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge></TableCell>
-              </TableRow>
-            ))}
-            {orders.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">لا توجد طلبات</TableCell></TableRow>}
-          </TableBody>
-        </Table>
-      </Card>
+      <Tabs defaultValue="orders">
+        <TabsList>
+          <TabsTrigger value="orders"><LayoutDashboard className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
+          <TabsTrigger value="map"><MapIcon className="ml-2 h-4 w-4" />تتبع المندوبين</TabsTrigger>
+          <TabsTrigger value="chat"><MessagesSquare className="ml-2 h-4 w-4" />المحادثات</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="orders" className="mt-4">
+          <Card className="p-5 overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>#</TableHead><TableHead>العميل</TableHead><TableHead>العنوان</TableHead>
+                <TableHead>الإجمالي</TableHead><TableHead>الحالة</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {orders.map((o) => (
+                  <TableRow key={o.id}>
+                    <TableCell className="font-mono text-xs" dir="ltr">{o.order_number}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{o.customer_name}</div>
+                      <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
+                    </TableCell>
+                    <TableCell className="max-w-[220px] truncate">{o.customer_address}</TableCell>
+                    <TableCell>{Number(o.total).toFixed(2)}</TableCell>
+                    <TableCell><Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge></TableCell>
+                  </TableRow>
+                ))}
+                {orders.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">لا توجد طلبات</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="map" className="mt-4">
+          <Card className="p-3">
+            <div className="mb-2 text-sm text-muted-foreground">المندوبين النشطين على الخريطة ({drivers.length})</div>
+            <DriversMap drivers={drivers} />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="chat" className="mt-4">
+          <ChatPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
