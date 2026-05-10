@@ -16,15 +16,23 @@ Deno.serve(async (req) => {
     const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(url, service, { auth: { persistSession: false } });
 
-    const { data: existing } = await admin.from("user_roles").select("id").eq("role", "admin").limit(1);
-    if (existing && existing.length > 0) {
-      return json({ error: "Admin already exists" }, 403);
-    }
-
     const body = (await req.json()) as { phone: string; password: string; full_name?: string };
     if (!body.phone || !body.password) return json({ error: "Missing fields" }, 400);
-
     const phoneDigits = body.phone.replace(/\D+/g, "");
+    const email = phoneToEmail(phoneDigits);
+
+    // If a user already exists with that email, just reset the password and ensure admin role.
+    const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const existingUser = list?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    if (existingUser) {
+      await admin.auth.admin.updateUserById(existingUser.id, { password: body.password, email_confirm: true });
+      const { data: hasRole } = await admin.from("user_roles").select("id").eq("user_id", existingUser.id).eq("role", "admin").limit(1);
+      if (!hasRole || hasRole.length === 0) {
+        await admin.from("user_roles").insert({ user_id: existingUser.id, role: "admin" });
+      }
+      return json({ ok: true, reset: true, user_id: existingUser.id });
+    }
+
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: phoneToEmail(phoneDigits),
       password: body.password,
