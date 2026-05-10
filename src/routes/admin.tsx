@@ -13,10 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { LayoutDashboard, MapPin, Users, Package, Plus, Trash2, Truck, Loader2, Map as MapIcon } from "lucide-react";
+import { LayoutDashboard, MapPin, Users, Package, Plus, Trash2, Truck, Loader2, Map as MapIcon, MessagesSquare } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_AR, STATUS_COLORS } from "@/lib/i18n";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { ChatPanel } from "@/components/chat-panel";
+import { useNotificationPermission, notify } from "@/lib/notifications";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -55,6 +57,17 @@ function AdminPage() {
 }
 
 function AdminContent() {
+  useNotificationPermission();
+  useEffect(() => {
+    const ch = supabase.channel("admin-new-orders")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (p) => {
+        const o = p.new as { order_number?: string; customer_name?: string };
+        toast.info(`طلب جديد: ${o.order_number ?? ""}`);
+        notify("طلب جديد", `${o.order_number ?? ""} — ${o.customer_name ?? ""}`);
+      }).subscribe();
+    return () => { ch.unsubscribe(); };
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -66,12 +79,14 @@ function AdminContent() {
         <TabsList>
           <TabsTrigger value="orders"><Package className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
           <TabsTrigger value="map"><MapIcon className="ml-2 h-4 w-4" />تتبع المندوبين</TabsTrigger>
+          <TabsTrigger value="chat"><MessagesSquare className="ml-2 h-4 w-4" />المحادثات</TabsTrigger>
           <TabsTrigger value="cities"><MapPin className="ml-2 h-4 w-4" />المدن</TabsTrigger>
           <TabsTrigger value="restaurants"><Users className="ml-2 h-4 w-4" />المطاعم</TabsTrigger>
           <TabsTrigger value="drivers"><Truck className="ml-2 h-4 w-4" />المندوبين</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="mt-4"><OrdersTab /></TabsContent>
         <TabsContent value="map" className="mt-4"><MapTab /></TabsContent>
+        <TabsContent value="chat" className="mt-4"><ChatPanel /></TabsContent>
         <TabsContent value="cities" className="mt-4"><CitiesTab /></TabsContent>
         <TabsContent value="restaurants" className="mt-4"><RestaurantsTab /></TabsContent>
         <TabsContent value="drivers" className="mt-4"><DriversTab /></TabsContent>
