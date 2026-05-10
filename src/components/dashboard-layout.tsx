@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { NotificationBell } from "@/components/notification-bell";
 
 export interface NavItem {
   to: string;
