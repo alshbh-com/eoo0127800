@@ -101,74 +101,7 @@ function AdminContent() {
   );
 }
 
-function Stats() {
-  const [stats, setStats] = useState({ orders: 0, delivered: 0, cancelled: 0, revenue: 0 });
-  const [chart, setChart] = useState<{ day: string; orders: number; revenue: number }[]>([]);
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase.from("orders").select("status,total,created_at");
-      if (!data) return;
-      const rows = data as Array<{ status: string; total: number | null; created_at: string }>;
-      setStats({
-        orders: rows.length,
-        delivered: rows.filter((o) => o.status === "delivered").length,
-        cancelled: rows.filter((o) => o.status === "cancelled").length,
-        revenue: rows.filter((o) => o.status === "delivered").reduce((s, o) => s + Number(o.total ?? 0), 0),
-      });
-      const days: Record<string, { orders: number; revenue: number }> = {};
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const k = d.toISOString().slice(0, 10);
-        days[k] = { orders: 0, revenue: 0 };
-      }
-      rows.forEach((o) => {
-        const k = new Date(o.created_at).toISOString().slice(0, 10);
-        if (days[k]) {
-          days[k].orders += 1;
-          if (o.status === "delivered") days[k].revenue += Number(o.total ?? 0);
-        }
-      });
-      setChart(Object.entries(days).map(([day, v]) => ({ day: day.slice(5), ...v })));
-    };
-    load();
-    const ch = supabase.channel("admin-stats")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, load).subscribe();
-    return () => { ch.unsubscribe(); };
-  }, []);
-  const cards = [
-    { label: "إجمالي الطلبات", value: stats.orders },
-    { label: "تم التوصيل", value: stats.delivered },
-    { label: "ملغي", value: stats.cancelled },
-    { label: "الإيرادات", value: stats.revenue.toFixed(2) },
-  ];
-  return (
-    <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <Card key={c.label} className="p-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{c.label}</div>
-            <div className="mt-2 text-2xl font-bold">{c.value}</div>
-          </Card>
-        ))}
-      </div>
-      <Card className="p-5">
-        <div className="mb-3 text-sm font-semibold">طلبات وإيرادات آخر 7 أيام</div>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={12} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
-              <Line type="monotone" dataKey="orders" stroke="var(--primary)" strokeWidth={2} name="الطلبات" />
-              <Line type="monotone" dataKey="revenue" stroke="var(--success)" strokeWidth={2} name="الإيرادات" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-    </>
-  );
-}
+/* Stats removed — now only inside ReportsTab gated by date filter */
 
 function MapTab() {
   const [drivers, setDrivers] = useState<MapDriver[]>([]);
