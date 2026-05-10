@@ -369,9 +369,7 @@ function UserActions({ userId, entity, cities, role, current, onChange }: {
   const [address, setAddress] = useState(current.address ?? "");
 
   const resetPassword = async () => {
-    const { data, error } = await supabase.functions.invoke("admin-manage-user", {
-      body: { action: "reset_password", user_id: userId, password: pwd },
-    });
+    const { data, error } = await invokeAdminFn("admin-manage-user", { action: "reset_password", user_id: userId, password: pwd });
     if (error || (data as { error?: string })?.error) return toast.error((data as { error?: string })?.error ?? error?.message ?? "فشل");
     toast.success("تم تغيير كلمة المرور"); setPwd(""); setResetOpen(false);
   };
@@ -383,17 +381,13 @@ function UserActions({ userId, entity, cities, role, current, onChange }: {
     const { error } = await (supabase.from(entity.table) as unknown as { update: (u: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update(updates).eq("id", entity.id);
     if (error) return toast.error(error.message);
     if (phone !== current.phone) {
-      await supabase.functions.invoke("admin-manage-user", {
-        body: { action: "update_phone", user_id: userId, phone },
-      });
+      await invokeAdminFn("admin-manage-user", { action: "update_phone", user_id: userId, phone });
     }
     toast.success("تم الحفظ"); setEditOpen(false); onChange();
   };
 
   const remove = async () => {
-    const { data, error } = await supabase.functions.invoke("admin-manage-user", {
-      body: { action: "delete", user_id: userId },
-    });
+    const { data, error } = await invokeAdminFn("admin-manage-user", { action: "delete", user_id: userId });
     if (error || (data as { error?: string })?.error) return toast.error((data as { error?: string })?.error ?? error?.message ?? "فشل");
     toast.success("تم الحذف"); onChange();
   };
@@ -811,9 +805,7 @@ function CreateUserForm({ role, cities, onDone }: { role: "restaurant" | "driver
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-create-user", {
-        body: { phone, password, full_name: name, role, name, address: role === "restaurant" ? address : null },
-      });
+      const { data, error } = await invokeAdminFn("admin-create-user", { phone, password, full_name: name, role, name, address: role === "restaurant" ? address : null });
       if (error) throw error;
       if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
       toast.success(role === "restaurant" ? "تم إنشاء المطعم" : "تم إنشاء المندوب");
