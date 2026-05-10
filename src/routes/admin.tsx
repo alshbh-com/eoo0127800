@@ -40,7 +40,7 @@ interface Driver {
   current_lat: number | null; current_lng: number | null; vehicle_type: string | null;
 }
 interface Order {
-  id: string; order_number: string; customer_name: string; customer_phone: string;
+  id: string; order_number: string; daily_number: number | null; customer_name: string; customer_phone: string;
   customer_address: string; items_total: number; delivery_price: number; total: number;
   status: string; restaurant_id: string; driver_id: string | null; city_id: string | null;
   created_at: string;
@@ -74,26 +74,25 @@ function AdminContent() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">لوحة التحكم</h1>
-        <p className="text-sm text-muted-foreground">إدارة شاملة للنظام والطلبات والحسابات.</p>
+      <div className="rounded-2xl bg-gradient-primary p-6 shadow-pop">
+        <h1 className="text-3xl font-extrabold tracking-tight">لوحة الأدمن</h1>
+        <p className="mt-1 text-sm opacity-90">إدارة شاملة للنظام والطلبات والحسابات.</p>
       </div>
-      <Stats />
       <Tabs defaultValue="orders">
-        <TabsList className="flex flex-wrap h-auto">
+        <TabsList className="flex flex-wrap h-auto bg-card p-1 shadow-soft rounded-xl">
           <TabsTrigger value="orders"><Package className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
+          <TabsTrigger value="reports"><LayoutDashboard className="ml-2 h-4 w-4" />التقارير</TabsTrigger>
           <TabsTrigger value="map"><MapIcon className="ml-2 h-4 w-4" />التتبع</TabsTrigger>
           <TabsTrigger value="chat"><MessagesSquare className="ml-2 h-4 w-4" />المحادثات</TabsTrigger>
-          <TabsTrigger value="accounting"><Wallet className="ml-2 h-4 w-4" />الحسابات</TabsTrigger>
           <TabsTrigger value="cities"><MapPin className="ml-2 h-4 w-4" />المدن</TabsTrigger>
           <TabsTrigger value="restaurants"><Users className="ml-2 h-4 w-4" />المطاعم</TabsTrigger>
           <TabsTrigger value="drivers"><Truck className="ml-2 h-4 w-4" />المندوبين</TabsTrigger>
           <TabsTrigger value="settings"><SettingsIcon className="ml-2 h-4 w-4" />الإعدادات</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="mt-4"><OrdersTab /></TabsContent>
+        <TabsContent value="reports" className="mt-4"><ReportsTab /></TabsContent>
         <TabsContent value="map" className="mt-4"><MapTab /></TabsContent>
         <TabsContent value="chat" className="mt-4"><ChatPanel /></TabsContent>
-        <TabsContent value="accounting" className="mt-4"><AccountingTab /></TabsContent>
         <TabsContent value="cities" className="mt-4"><CitiesTab /></TabsContent>
         <TabsContent value="restaurants" className="mt-4"><RestaurantsTab /></TabsContent>
         <TabsContent value="drivers" className="mt-4"><DriversTab /></TabsContent>
