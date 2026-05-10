@@ -2,7 +2,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 type GenericRow = Record<string, any>;
 interface GenericTable {
-  Row: GenericRow;
+  Row: any;
   Insert: GenericRow;
   Update: GenericRow;
   Relationships: [];
