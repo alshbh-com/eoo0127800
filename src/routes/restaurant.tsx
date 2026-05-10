@@ -160,10 +160,13 @@ function Body() {
             <Table>
               <TableHeader><TableRow>
                 <TableHead>#</TableHead><TableHead>العميل</TableHead><TableHead>العنوان</TableHead>
+                <TableHead>المندوب</TableHead>
                 <TableHead>الإجمالي</TableHead><TableHead>الحالة</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {orders.map((o) => (
+                {orders.map((o) => {
+                  const drv = drivers.find((d) => d.id === o.driver_id);
+                  return (
                   <TableRow key={o.id}>
                     <TableCell><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-gradient-primary px-2 text-sm font-bold text-primary-foreground shadow-soft">{o.daily_number ?? "—"}</span></TableCell>
                     <TableCell>
@@ -171,11 +174,13 @@ function Body() {
                       <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
                     </TableCell>
                     <TableCell className="max-w-[220px] truncate">{o.customer_address}</TableCell>
+                    <TableCell className="text-xs" dir="ltr">{drv ? drv.label : <span className="text-muted-foreground">— لم يُعيَّن</span>}</TableCell>
                     <TableCell className="font-semibold">{Number(o.total).toFixed(2)}</TableCell>
                     <TableCell><Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge></TableCell>
                   </TableRow>
-                ))}
-                {orders.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">لا توجد طلبات</TableCell></TableRow>}
+                  );
+                })}
+                {orders.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground">لا توجد طلبات</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
