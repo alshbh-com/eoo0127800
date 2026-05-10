@@ -110,11 +110,12 @@ function Stats() {
     const load = async () => {
       const { data } = await supabase.from("orders").select("status,total,created_at");
       if (!data) return;
+      const rows = data as Array<{ status: string; total: number | null; created_at: string }>;
       setStats({
-        orders: data.length,
-        delivered: data.filter((o: { status: string }) => o.status === "delivered").length,
-        cancelled: data.filter((o: { status: string }) => o.status === "cancelled").length,
-        revenue: data.filter((o: { status: string }) => o.status === "delivered").reduce((s: number, o: { total: number }) => s + Number(o.total), 0),
+        orders: rows.length,
+        delivered: rows.filter((o) => o.status === "delivered").length,
+        cancelled: rows.filter((o) => o.status === "cancelled").length,
+        revenue: rows.filter((o) => o.status === "delivered").reduce((s, o) => s + Number(o.total ?? 0), 0),
       });
       const days: Record<string, { orders: number; revenue: number }> = {};
       for (let i = 6; i >= 0; i--) {
@@ -122,11 +123,11 @@ function Stats() {
         const k = d.toISOString().slice(0, 10);
         days[k] = { orders: 0, revenue: 0 };
       }
-      data.forEach((o: { status: string; total: number; created_at: string }) => {
+      rows.forEach((o) => {
         const k = new Date(o.created_at).toISOString().slice(0, 10);
         if (days[k]) {
           days[k].orders += 1;
-          if (o.status === "delivered") days[k].revenue += Number(o.total);
+          if (o.status === "delivered") days[k].revenue += Number(o.total ?? 0);
         }
       });
       setChart(Object.entries(days).map(([day, v]) => ({ day: day.slice(5), ...v })));
@@ -177,10 +178,11 @@ function MapTab() {
     const load = async () => {
       const { data } = await supabase.from("drivers").select("id, phone, is_online, current_lat, current_lng");
       if (!data) return;
+      const rows = data as Array<{ id: string; phone: string | null; is_online: boolean; current_lat: number | null; current_lng: number | null }>;
       setDrivers(
-        data
-          .filter((d: { current_lat: number | null; current_lng: number | null }) => d.current_lat != null && d.current_lng != null)
-          .map((d: { id: string; phone: string | null; is_online: boolean; current_lat: number; current_lng: number }) => ({
+        rows
+          .filter((d) => d.current_lat != null && d.current_lng != null)
+          .map((d) => ({
             id: d.id, lat: Number(d.current_lat), lng: Number(d.current_lng),
             label: d.phone ?? d.id.slice(0, 8), online: !!d.is_online,
           })),
@@ -429,7 +431,7 @@ function UserActions({ userId, entity, cities, role, current, onChange }: {
     const updates: Record<string, unknown> = role === "restaurant"
       ? { name, phone, city_id: cityId || null, address }
       : { phone, city_id: cityId || null };
-    const { error } = await supabase.from(entity.table).update(updates).eq("id", entity.id);
+    const { error } = await (supabase.from(entity.table) as unknown as { update: (u: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update(updates).eq("id", entity.id);
     if (error) return toast.error(error.message);
     if (phone !== current.phone) {
       await supabase.functions.invoke("admin-manage-user", {
@@ -540,7 +542,7 @@ function OrdersTab() {
   const updateStatus = async (orderId: string, status: string) => {
     const updates: Record<string, unknown> = { status };
     if (status === "delivered") updates.delivered_at = new Date().toISOString();
-    const { error } = await supabase.from("orders").update(updates).eq("id", orderId);
+    const { error } = await (supabase.from("orders") as unknown as { update: (u: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update(updates).eq("id", orderId);
     if (error) return toast.error(error.message);
     toast.success("تم تحديث الحالة");
   };
