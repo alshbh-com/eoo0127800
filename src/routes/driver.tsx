@@ -127,6 +127,12 @@ function Body() {
     toast.success(`تم التحديث: ${STATUS_AR[status] ?? status}`);
   };
 
+  const rejectOrder = async (id: string) => {
+    const { error } = await supabase.from("orders").update({ status: "pending", driver_id: null } as never).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.warning("تم رفض الطلب وإعادته للأدمن");
+  };
+
   const totals = {
     active: orders.filter((o) => !["delivered","cancelled","returned"].includes(o.status)).length,
     delivered: orders.filter((o) => o.status === "delivered").length,
@@ -215,8 +221,11 @@ function Body() {
                       </Select>
                     </div>
                   )}
-                  {o.status === "pending" && (
-                    <Button className="mt-3 w-full" onClick={() => updateStatus(o.id, "accepted")}>قبول الطلب</Button>
+                  {(o.status === "pending" || o.status === "accepted") && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <Button className="bg-gradient-success shadow-pop" onClick={() => updateStatus(o.id, "preparing")}>قبول</Button>
+                      <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => rejectOrder(o.id)}>رفض</Button>
+                    </div>
                   )}
                 </Card>
               );
