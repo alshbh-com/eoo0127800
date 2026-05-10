@@ -105,6 +105,18 @@ function AdminContent() {
   );
 }
 
+async function invokeAdminFn<T = unknown>(name: "admin-create-user" | "admin-manage-user", body: Record<string, unknown>) {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData.session?.access_token) {
+    throw new Error("انتهت الجلسة، سجل الدخول مرة أخرى");
+  }
+
+  return supabase.functions.invoke<T>(name, {
+    body,
+    headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+  });
+}
+
 /* Stats removed — now only inside ReportsTab gated by date filter */
 
 function MapTab() {
