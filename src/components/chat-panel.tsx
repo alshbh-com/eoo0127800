@@ -11,7 +11,7 @@ const ROLE_AR: Record<string, string> = { admin: "مسؤول", restaurant: "مط
 interface Contact { user_id: string; full_name: string; role: string }
 interface Message { id: string; sender_id: string; recipient_id: string; body: string; created_at: string; read_at: string | null }
 
-export function ChatPanel() {
+export function ChatPanel({ initialContactId }: { initialContactId?: string | null } = {}) {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [unread, setUnread] = useState<Record<string, number>>({});
@@ -34,6 +34,12 @@ export function ChatPanel() {
       }
     })();
   }, [user]);
+
+  useEffect(() => {
+    if (!initialContactId || contacts.length === 0) return;
+    const c = contacts.find((x) => x.user_id === initialContactId);
+    if (c) setActive(c);
+  }, [initialContactId, contacts]);
 
   useEffect(() => {
     if (!user) return;
