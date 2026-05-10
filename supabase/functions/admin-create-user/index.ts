@@ -60,13 +60,14 @@ Deno.serve(async (req) => {
         user_id: newUserId,
         name: body.name,
         phone: phoneDigits,
-        city_id: body.city_id,
+        city_id: body.city_id ?? null,
+        address: body.address ?? null,
       });
     } else if (body.role === "driver") {
       await admin.from("drivers").insert({
         user_id: newUserId,
         phone: phoneDigits,
-        city_id: body.city_id,
+        city_id: body.city_id ?? null,
       });
     }
 
