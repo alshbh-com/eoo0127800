@@ -10,8 +10,9 @@ interface Body {
   password: string;
   full_name: string;
   role: "restaurant" | "driver";
-  city_id: string | null;
+  city_id?: string | null;
   name: string;
+  address?: string | null;
 }
 
 function phoneToEmail(p: string) {
