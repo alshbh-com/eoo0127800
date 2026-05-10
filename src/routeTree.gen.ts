@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RestaurantRouteImport } from './routes/restaurant'
 import { Route as NoRoleRouteImport } from './routes/no-role'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -36,6 +37,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DriverRoute = DriverRouteImport.update({
+  id: '/driver',
+  path: '/driver',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -50,6 +56,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/driver': typeof DriverRoute
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/driver': typeof DriverRoute
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/driver': typeof DriverRoute
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
@@ -74,13 +83,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/login' | '/no-role' | '/restaurant' | '/signup'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/driver'
+    | '/login'
+    | '/no-role'
+    | '/restaurant'
+    | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/login' | '/no-role' | '/restaurant' | '/signup'
+  to:
+    | '/'
+    | '/admin'
+    | '/driver'
+    | '/login'
+    | '/no-role'
+    | '/restaurant'
+    | '/signup'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/driver'
     | '/login'
     | '/no-role'
     | '/restaurant'
@@ -90,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  DriverRoute: typeof DriverRoute
   LoginRoute: typeof LoginRoute
   NoRoleRoute: typeof NoRoleRoute
   RestaurantRoute: typeof RestaurantRoute
@@ -126,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/driver': {
+      id: '/driver'
+      path: '/driver'
+      fullPath: '/driver'
+      preLoaderRoute: typeof DriverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -146,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  DriverRoute: DriverRoute,
   LoginRoute: LoginRoute,
   NoRoleRoute: NoRoleRoute,
   RestaurantRoute: RestaurantRoute,
