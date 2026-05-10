@@ -299,15 +299,17 @@ function DriversTab() {
       </div>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>الهاتف</TableHead><TableHead>المدينة</TableHead><TableHead>الاتصال</TableHead><TableHead>الحالة</TableHead><TableHead className="w-40">إجراءات</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>الهاتف</TableHead><TableHead>الاتصال</TableHead><TableHead>الموقع</TableHead><TableHead>الحالة</TableHead><TableHead className="w-40">إجراءات</TableHead></TableRow></TableHeader>
           <TableBody>
             {items.map((d) => (
               <TableRow key={d.id}>
                 <TableCell dir="ltr">{d.phone ?? "—"}</TableCell>
-                <TableCell>{cities.find((c) => c.id === d.city_id)?.name ?? "—"}</TableCell>
                 <TableCell>
                   <span className={`inline-flex h-2 w-2 rounded-full ${d.is_online ? "bg-success" : "bg-muted-foreground/40"}`} />
                   <span className="mr-2 text-xs text-muted-foreground">{d.is_online ? "متصل" : "غير متصل"}</span>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground" dir="ltr">
+                  {d.current_lat && d.current_lng ? `${d.current_lat.toFixed(4)}, ${d.current_lng.toFixed(4)}` : "—"}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
