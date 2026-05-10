@@ -44,8 +44,30 @@ Deno.serve(async (req) => {
     }
 
     if (action === "delete") {
-      const { error } = await admin.auth.admin.deleteUser(body.user_id);
-      if (error) return json({ error: error.message }, 400);
+      const uid = body.user_id as string;
+      // Clean up dependents to avoid FK / trigger failures during auth deletion
+      const { data: rests } = await admin.from("restaurants").select("id").eq("user_id", uid);
+      const restIds = (rests ?? []).map((r) => r.id);
+      const { data: drvs } = await admin.from("drivers").select("id").eq("user_id", uid);
+      const drvIds = (drvs ?? []).map((d) => d.id);
+
+      if (restIds.length) {
+        await admin.from("products").delete().in("restaurant_id", restIds);
+        await admin.from("orders").delete().in("restaurant_id", restIds);
+        await admin.from("restaurants").delete().in("id", restIds);
+      }
+      if (drvIds.length) {
+        await admin.from("orders").update({ driver_id: null }).in("driver_id", drvIds);
+        await admin.from("drivers").delete().in("id", drvIds);
+      }
+      await admin.from("messages").delete().or(`sender_id.eq.${uid},recipient_id.eq.${uid}`);
+      await admin.from("notifications").delete().eq("user_id", uid);
+      await admin.from("complaints").delete().eq("created_by", uid);
+      await admin.from("user_roles").delete().eq("user_id", uid);
+      await admin.from("profiles").delete().eq("id", uid);
+
+      const { error } = await admin.auth.admin.deleteUser(uid);
+      if (error) return json({ error: error.message, detail: "auth delete failed after cleanup" }, 400);
       return json({ ok: true });
     }
 
