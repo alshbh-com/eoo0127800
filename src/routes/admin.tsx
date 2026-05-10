@@ -18,11 +18,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   LayoutDashboard, MapPin, Users, Package, Plus, Trash2, Truck, Loader2,
-  Map as MapIcon, MessagesSquare, Eye, KeyRound, Search, Download, Settings as SettingsIcon, Wallet,
+  Map as MapIcon, MessagesSquare, Eye, KeyRound, Search, Download, Settings as SettingsIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_AR, STATUS_COLORS } from "@/lib/i18n";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { ChatPanel } from "@/components/chat-panel";
 import { useNotificationPermission, notify } from "@/lib/notifications";
 import { downloadCSV } from "@/lib/export";
@@ -40,7 +39,7 @@ interface Driver {
   current_lat: number | null; current_lng: number | null; vehicle_type: string | null;
 }
 interface Order {
-  id: string; order_number: string; customer_name: string; customer_phone: string;
+  id: string; order_number: string; daily_number: number | null; customer_name: string; customer_phone: string;
   customer_address: string; items_total: number; delivery_price: number; total: number;
   status: string; restaurant_id: string; driver_id: string | null; city_id: string | null;
   created_at: string;
@@ -74,26 +73,25 @@ function AdminContent() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">لوحة التحكم</h1>
-        <p className="text-sm text-muted-foreground">إدارة شاملة للنظام والطلبات والحسابات.</p>
+      <div className="rounded-2xl bg-gradient-primary p-6 shadow-pop">
+        <h1 className="text-3xl font-extrabold tracking-tight">لوحة الأدمن</h1>
+        <p className="mt-1 text-sm opacity-90">إدارة شاملة للنظام والطلبات والحسابات.</p>
       </div>
-      <Stats />
       <Tabs defaultValue="orders">
-        <TabsList className="flex flex-wrap h-auto">
+        <TabsList className="flex flex-wrap h-auto bg-card p-1 shadow-soft rounded-xl">
           <TabsTrigger value="orders"><Package className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
+          <TabsTrigger value="reports"><LayoutDashboard className="ml-2 h-4 w-4" />التقارير</TabsTrigger>
           <TabsTrigger value="map"><MapIcon className="ml-2 h-4 w-4" />التتبع</TabsTrigger>
           <TabsTrigger value="chat"><MessagesSquare className="ml-2 h-4 w-4" />المحادثات</TabsTrigger>
-          <TabsTrigger value="accounting"><Wallet className="ml-2 h-4 w-4" />الحسابات</TabsTrigger>
           <TabsTrigger value="cities"><MapPin className="ml-2 h-4 w-4" />المدن</TabsTrigger>
           <TabsTrigger value="restaurants"><Users className="ml-2 h-4 w-4" />المطاعم</TabsTrigger>
           <TabsTrigger value="drivers"><Truck className="ml-2 h-4 w-4" />المندوبين</TabsTrigger>
           <TabsTrigger value="settings"><SettingsIcon className="ml-2 h-4 w-4" />الإعدادات</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="mt-4"><OrdersTab /></TabsContent>
+        <TabsContent value="reports" className="mt-4"><ReportsTab /></TabsContent>
         <TabsContent value="map" className="mt-4"><MapTab /></TabsContent>
         <TabsContent value="chat" className="mt-4"><ChatPanel /></TabsContent>
-        <TabsContent value="accounting" className="mt-4"><AccountingTab /></TabsContent>
         <TabsContent value="cities" className="mt-4"><CitiesTab /></TabsContent>
         <TabsContent value="restaurants" className="mt-4"><RestaurantsTab /></TabsContent>
         <TabsContent value="drivers" className="mt-4"><DriversTab /></TabsContent>
@@ -103,73 +101,7 @@ function AdminContent() {
   );
 }
 
-function Stats() {
-  const [stats, setStats] = useState({ orders: 0, delivered: 0, cancelled: 0, revenue: 0 });
-  const [chart, setChart] = useState<{ day: string; orders: number; revenue: number }[]>([]);
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase.from("orders").select("status,total,created_at");
-      if (!data) return;
-      setStats({
-        orders: data.length,
-        delivered: data.filter((o: { status: string }) => o.status === "delivered").length,
-        cancelled: data.filter((o: { status: string }) => o.status === "cancelled").length,
-        revenue: data.filter((o: { status: string }) => o.status === "delivered").reduce((s: number, o: { total: number }) => s + Number(o.total), 0),
-      });
-      const days: Record<string, { orders: number; revenue: number }> = {};
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const k = d.toISOString().slice(0, 10);
-        days[k] = { orders: 0, revenue: 0 };
-      }
-      data.forEach((o: { status: string; total: number; created_at: string }) => {
-        const k = new Date(o.created_at).toISOString().slice(0, 10);
-        if (days[k]) {
-          days[k].orders += 1;
-          if (o.status === "delivered") days[k].revenue += Number(o.total);
-        }
-      });
-      setChart(Object.entries(days).map(([day, v]) => ({ day: day.slice(5), ...v })));
-    };
-    load();
-    const ch = supabase.channel("admin-stats")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, load).subscribe();
-    return () => { ch.unsubscribe(); };
-  }, []);
-  const cards = [
-    { label: "إجمالي الطلبات", value: stats.orders },
-    { label: "تم التوصيل", value: stats.delivered },
-    { label: "ملغي", value: stats.cancelled },
-    { label: "الإيرادات", value: stats.revenue.toFixed(2) },
-  ];
-  return (
-    <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <Card key={c.label} className="p-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{c.label}</div>
-            <div className="mt-2 text-2xl font-bold">{c.value}</div>
-          </Card>
-        ))}
-      </div>
-      <Card className="p-5">
-        <div className="mb-3 text-sm font-semibold">طلبات وإيرادات آخر 7 أيام</div>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={12} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
-              <Line type="monotone" dataKey="orders" stroke="var(--primary)" strokeWidth={2} name="الطلبات" />
-              <Line type="monotone" dataKey="revenue" stroke="var(--success)" strokeWidth={2} name="الإيرادات" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-    </>
-  );
-}
+/* Stats removed — now only inside ReportsTab gated by date filter */
 
 function MapTab() {
   const [drivers, setDrivers] = useState<MapDriver[]>([]);
@@ -177,10 +109,11 @@ function MapTab() {
     const load = async () => {
       const { data } = await supabase.from("drivers").select("id, phone, is_online, current_lat, current_lng");
       if (!data) return;
+      const rows = data as Array<{ id: string; phone: string | null; is_online: boolean; current_lat: number | null; current_lng: number | null }>;
       setDrivers(
-        data
-          .filter((d: { current_lat: number | null; current_lng: number | null }) => d.current_lat != null && d.current_lng != null)
-          .map((d: { id: string; phone: string | null; is_online: boolean; current_lat: number; current_lng: number }) => ({
+        rows
+          .filter((d) => d.current_lat != null && d.current_lng != null)
+          .map((d) => ({
             id: d.id, lat: Number(d.current_lat), lng: Number(d.current_lng),
             label: d.phone ?? d.id.slice(0, 8), online: !!d.is_online,
           })),
@@ -429,7 +362,7 @@ function UserActions({ userId, entity, cities, role, current, onChange }: {
     const updates: Record<string, unknown> = role === "restaurant"
       ? { name, phone, city_id: cityId || null, address }
       : { phone, city_id: cityId || null };
-    const { error } = await supabase.from(entity.table).update(updates).eq("id", entity.id);
+    const { error } = await (supabase.from(entity.table) as unknown as { update: (u: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update(updates).eq("id", entity.id);
     if (error) return toast.error(error.message);
     if (phone !== current.phone) {
       await supabase.functions.invoke("admin-manage-user", {
@@ -540,7 +473,7 @@ function OrdersTab() {
   const updateStatus = async (orderId: string, status: string) => {
     const updates: Record<string, unknown> = { status };
     if (status === "delivered") updates.delivered_at = new Date().toISOString();
-    const { error } = await supabase.from("orders").update(updates).eq("id", orderId);
+    const { error } = await (supabase.from("orders") as unknown as { update: (u: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update(updates).eq("id", orderId);
     if (error) return toast.error(error.message);
     toast.success("تم تحديث الحالة");
   };
@@ -612,7 +545,7 @@ function OrdersTab() {
               const rest = restaurants.find((r) => r.id === o.restaurant_id);
               return (
                 <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs" dir="ltr">{o.order_number}</TableCell>
+                  <TableCell><span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-gradient-primary px-2 text-xs font-bold text-primary-foreground">{o.daily_number ?? "—"}</span></TableCell>
                   <TableCell>
                     <div className="font-medium">{o.customer_name}</div>
                     <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
@@ -652,108 +585,155 @@ function OrdersTab() {
   );
 }
 
-function AccountingTab() {
+function ReportsTab() {
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+  const [from, setFrom] = useState(weekAgo);
+  const [to, setTo] = useState(today);
+  const [applied, setApplied] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+  const apply = async () => {
+    setLoading(true);
+    const [o, r, d] = await Promise.all([
+      supabase.from("orders").select("*")
+        .gte("created_at", from + "T00:00:00")
+        .lte("created_at", to + "T23:59:59")
+        .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("*"),
       supabase.from("drivers").select("*"),
-    ]).then(([o, r, d]) => {
-      if (o.data) setOrders(o.data as Order[]);
-      if (r.data) setRestaurants(r.data as Restaurant[]);
-      if (d.data) setDrivers(d.data as Driver[]);
-    });
-  }, []);
+    ]);
+    if (o.data) setOrders(o.data as Order[]);
+    if (r.data) setRestaurants(r.data as Restaurant[]);
+    if (d.data) setDrivers(d.data as Driver[]);
+    setApplied(true);
+    setLoading(false);
+  };
 
-  const inRange = (o: Order) => {
-    if (from && new Date(o.created_at) < new Date(from)) return false;
-    if (to && new Date(o.created_at) > new Date(to + "T23:59:59")) return false;
-    return true;
+  const delivered = orders.filter((o) => o.status === "delivered");
+  const totals = {
+    orders: orders.length,
+    delivered: delivered.length,
+    cancelled: orders.filter((o) => o.status === "cancelled").length,
+    revenue: delivered.reduce((s, o) => s + Number(o.total ?? 0), 0),
+    items: delivered.reduce((s, o) => s + Number(o.items_total ?? 0), 0),
+    delivery: delivered.reduce((s, o) => s + Number(o.delivery_price ?? 0), 0),
   };
 
   const restaurantStats = restaurants.map((r) => {
-    const list = orders.filter((o) => o.restaurant_id === r.id && o.status === "delivered" && inRange(o));
+    const list = delivered.filter((o) => o.restaurant_id === r.id);
     return {
       المطعم: r.name,
-      الطلبات_المسلّمة: list.length,
-      إجمالي_المنتجات: list.reduce((s, o) => s + Number(o.items_total), 0).toFixed(2),
-      إجمالي_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price), 0).toFixed(2),
-      الإجمالي: list.reduce((s, o) => s + Number(o.total), 0).toFixed(2),
+      عدد_الطلبات: list.length,
+      إجمالي_المنتجات: list.reduce((s, o) => s + Number(o.items_total ?? 0), 0).toFixed(2),
+      إجمالي_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price ?? 0), 0).toFixed(2),
+      للمطعم_بدون_توصيل: list.reduce((s, o) => s + Number(o.items_total ?? 0), 0).toFixed(2),
+      الإجمالي_الكلي: list.reduce((s, o) => s + Number(o.total ?? 0), 0).toFixed(2),
     };
-  });
+  }).filter((s) => s.عدد_الطلبات > 0);
 
   const driverStats = drivers.map((d) => {
-    const list = orders.filter((o) => o.driver_id === d.id && o.status === "delivered" && inRange(o));
+    const list = delivered.filter((o) => o.driver_id === d.id);
     return {
       المندوب: d.phone ?? d.id.slice(0, 8),
-      الطلبات: list.length,
-      أتعاب_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price), 0).toFixed(2),
+      عدد_التوصيلات: list.length,
+      أتعاب_التوصيل: list.reduce((s, o) => s + Number(o.delivery_price ?? 0), 0).toFixed(2),
     };
-  });
+  }).filter((s) => s.عدد_التوصيلات > 0);
 
   return (
     <div className="space-y-4">
-      <Card className="p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div><Label className="text-xs">من</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" /></div>
-          <div><Label className="text-xs">إلى</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" /></div>
-          <Button variant="outline" onClick={() => { setFrom(""); setTo(""); }}>مسح</Button>
+      <Card className="p-5 shadow-soft">
+        <div className="mb-3 text-lg font-bold text-gradient-primary">فلتر التقارير</div>
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
+          <div><Label className="text-xs">من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" /></div>
+          <div><Label className="text-xs">إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" /></div>
+          <div className="flex items-end"><Button onClick={apply} disabled={loading} className="bg-gradient-primary shadow-pop">{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}عرض التقرير</Button></div>
+          <div className="flex items-end"><Button variant="outline" onClick={() => { setFrom(weekAgo); setTo(today); }}>آخر 7 أيام</Button></div>
         </div>
       </Card>
 
-      <Card className="p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="font-semibold">حسابات المطاعم</div>
-          <Button variant="outline" size="sm" onClick={() => downloadCSV("restaurants-accounting.csv", restaurantStats)}>
-            <Download className="ml-2 h-4 w-4" />تصدير
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow><TableHead>المطعم</TableHead><TableHead>الطلبات</TableHead><TableHead>منتجات</TableHead><TableHead>توصيل</TableHead><TableHead>الإجمالي</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {restaurantStats.map((s) => (
-                <TableRow key={s.المطعم}>
-                  <TableCell className="font-medium">{s.المطعم}</TableCell>
-                  <TableCell>{s.الطلبات_المسلّمة}</TableCell>
-                  <TableCell>{s.إجمالي_المنتجات}</TableCell>
-                  <TableCell>{s.إجمالي_التوصيل}</TableCell>
-                  <TableCell className="font-semibold">{s.الإجمالي}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      {!applied && (
+        <Card className="p-12 text-center text-muted-foreground">
+          اختر الفترة الزمنية ثم اضغط <span className="font-semibold text-foreground">عرض التقرير</span> لظهور الإحصائيات.
+        </Card>
+      )}
 
-      <Card className="p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="font-semibold">مستحقات المندوبين</div>
-          <Button variant="outline" size="sm" onClick={() => downloadCSV("drivers-accounting.csv", driverStats)}>
-            <Download className="ml-2 h-4 w-4" />تصدير
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow><TableHead>المندوب</TableHead><TableHead>الطلبات</TableHead><TableHead>أتعاب التوصيل</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {driverStats.map((s) => (
-                <TableRow key={s.المندوب}>
-                  <TableCell dir="ltr">{s.المندوب}</TableCell>
-                  <TableCell>{s.الطلبات}</TableCell>
-                  <TableCell className="font-semibold">{s.أتعاب_التوصيل}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      {applied && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "إجمالي الطلبات", value: totals.orders, cls: "bg-gradient-primary" },
+              { label: "تم التوصيل", value: totals.delivered, cls: "bg-gradient-success" },
+              { label: "الإيرادات", value: totals.revenue.toFixed(2), cls: "bg-gradient-warm" },
+              { label: "أتعاب التوصيل", value: totals.delivery.toFixed(2), cls: "bg-gradient-cool" },
+            ].map((c) => (
+              <Card key={c.label} className={`${c.cls} p-5 border-0 shadow-pop`}>
+                <div className="text-xs uppercase tracking-wider opacity-90">{c.label}</div>
+                <div className="mt-2 text-3xl font-extrabold">{c.value}</div>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-5 shadow-soft">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-lg font-bold">حسابات المطاعم</div>
+              <Button variant="outline" size="sm" onClick={() => downloadCSV("restaurants-report.csv", restaurantStats)}>
+                <Download className="ml-2 h-4 w-4" />تصدير
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>المطعم</TableHead><TableHead>الطلبات</TableHead>
+                  <TableHead>قيمة المنتجات</TableHead><TableHead>التوصيل</TableHead>
+                  <TableHead>للمطعم (بدون توصيل)</TableHead><TableHead>الإجمالي</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {restaurantStats.map((s) => (
+                    <TableRow key={s.المطعم}>
+                      <TableCell className="font-medium">{s.المطعم}</TableCell>
+                      <TableCell><Badge className="bg-gradient-primary">{s.عدد_الطلبات}</Badge></TableCell>
+                      <TableCell>{s.إجمالي_المنتجات}</TableCell>
+                      <TableCell>{s.إجمالي_التوصيل}</TableCell>
+                      <TableCell className="font-bold text-success">{s.للمطعم_بدون_توصيل}</TableCell>
+                      <TableCell className="font-semibold">{s.الإجمالي_الكلي}</TableCell>
+                    </TableRow>
+                  ))}
+                  {restaurantStats.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground">لا توجد بيانات</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
+          <Card className="p-5 shadow-soft">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-lg font-bold">مستحقات المندوبين</div>
+              <Button variant="outline" size="sm" onClick={() => downloadCSV("drivers-report.csv", driverStats)}>
+                <Download className="ml-2 h-4 w-4" />تصدير
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>المندوب</TableHead><TableHead>عدد التوصيلات</TableHead><TableHead>أتعاب التوصيل</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {driverStats.map((s) => (
+                    <TableRow key={s.المندوب}>
+                      <TableCell dir="ltr">{s.المندوب}</TableCell>
+                      <TableCell><Badge className="bg-gradient-cool">{s.عدد_التوصيلات}</Badge></TableCell>
+                      <TableCell className="font-semibold text-success">{s.أتعاب_التوصيل}</TableCell>
+                    </TableRow>
+                  ))}
+                  {driverStats.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-sm text-muted-foreground">لا توجد بيانات</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

@@ -30,7 +30,7 @@ const NEXT_STATUS: Record<string, string[]> = {
 };
 
 interface Order {
-  id: string; order_number: string; customer_name: string; customer_phone: string;
+  id: string; order_number: string; daily_number: number | null; customer_name: string; customer_phone: string;
   customer_address: string; items_total: number; delivery_price: number; total: number;
   status: string; created_at: string; notes: string | null;
 }
@@ -127,6 +127,12 @@ function Body() {
     toast.success(`تم التحديث: ${STATUS_AR[status] ?? status}`);
   };
 
+  const rejectOrder = async (id: string) => {
+    const { error } = await supabase.from("orders").update({ status: "pending", driver_id: null } as never).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.warning("تم رفض الطلب وإعادته للأدمن");
+  };
+
   const totals = {
     active: orders.filter((o) => !["delivered","cancelled","returned"].includes(o.status)).length,
     delivered: orders.filter((o) => o.status === "delivered").length,
@@ -143,27 +149,27 @@ function Body() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-cool p-6 shadow-pop text-white">
         <div>
-          <h1 className="text-2xl font-bold">طلباتي</h1>
-          <p className="text-sm text-muted-foreground">تابع وحدّث حالة طلباتك المعينة.</p>
+          <h1 className="text-3xl font-extrabold">طلباتي</h1>
+          <p className="mt-1 text-sm opacity-90">{isOnline ? "موقعك يُبث مباشرة للأدمن والمطاعم" : "فعّل الاتصال لبدء استقبال الطلبات"}</p>
         </div>
-        <Card className="flex items-center gap-3 px-4 py-2">
-          <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-success" : "bg-muted-foreground/40"}`} />
-          <span className="text-sm">{isOnline ? "متصل" : "غير متصل"}</span>
+        <div className="flex items-center gap-3 rounded-xl bg-white/20 backdrop-blur px-4 py-2">
+          <span className={`h-3 w-3 rounded-full ${isOnline ? "bg-success animate-pulse" : "bg-white/40"}`} />
+          <span className="text-sm font-semibold">{isOnline ? "متصل" : "غير متصل"}</span>
           <Switch checked={isOnline} onCheckedChange={toggleOnline} />
-        </Card>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {[
-          { label: "نشط", value: totals.active },
-          { label: "تم التوصيل", value: totals.delivered },
-          { label: "الأرباح", value: totals.earnings.toFixed(2) },
+          { label: "نشط", value: totals.active, cls: "bg-gradient-primary" },
+          { label: "تم التوصيل", value: totals.delivered, cls: "bg-gradient-success" },
+          { label: "الأرباح", value: totals.earnings.toFixed(2), cls: "bg-gradient-warm" },
         ].map((c) => (
-          <Card key={c.label} className="p-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{c.label}</div>
-            <div className="mt-2 text-2xl font-bold">{c.value}</div>
+          <Card key={c.label} className={`${c.cls} p-5 border-0 shadow-soft text-white`}>
+            <div className="text-xs uppercase tracking-wider opacity-90">{c.label}</div>
+            <div className="mt-2 text-3xl font-extrabold">{c.value}</div>
           </Card>
         ))}
       </div>
@@ -183,9 +189,12 @@ function Body() {
               return (
                 <Card key={o.id} className="p-5">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-mono text-xs text-muted-foreground" dir="ltr">{o.order_number}</div>
-                      <div className="mt-1 text-lg font-semibold">{o.customer_name}</div>
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-base font-extrabold text-primary-foreground shadow-pop">{o.daily_number ?? "—"}</span>
+                      <div>
+                        <div className="text-lg font-bold">{o.customer_name}</div>
+                        <div className="font-mono text-[10px] text-muted-foreground" dir="ltr">{o.order_number}</div>
+                      </div>
                     </div>
                     <Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge>
                   </div>
@@ -212,8 +221,11 @@ function Body() {
                       </Select>
                     </div>
                   )}
-                  {o.status === "pending" && (
-                    <Button className="mt-3 w-full" onClick={() => updateStatus(o.id, "accepted")}>قبول الطلب</Button>
+                  {(o.status === "pending" || o.status === "accepted") && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <Button className="bg-gradient-success shadow-pop" onClick={() => updateStatus(o.id, "preparing")}>قبول</Button>
+                      <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => rejectOrder(o.id)}>رفض</Button>
+                    </div>
                   )}
                 </Card>
               );
