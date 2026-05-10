@@ -30,7 +30,7 @@ const NEXT_STATUS: Record<string, string[]> = {
 };
 
 interface Order {
-  id: string; order_number: string; customer_name: string; customer_phone: string;
+  id: string; order_number: string; daily_number: number | null; customer_name: string; customer_phone: string;
   customer_address: string; items_total: number; delivery_price: number; total: number;
   status: string; created_at: string; notes: string | null;
 }
@@ -183,9 +183,12 @@ function Body() {
               return (
                 <Card key={o.id} className="p-5">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-mono text-xs text-muted-foreground" dir="ltr">{o.order_number}</div>
-                      <div className="mt-1 text-lg font-semibold">{o.customer_name}</div>
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-base font-extrabold text-primary-foreground shadow-pop">{o.daily_number ?? "—"}</span>
+                      <div>
+                        <div className="text-lg font-bold">{o.customer_name}</div>
+                        <div className="font-mono text-[10px] text-muted-foreground" dir="ltr">{o.order_number}</div>
+                      </div>
                     </div>
                     <Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge>
                   </div>

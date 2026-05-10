@@ -545,7 +545,7 @@ function OrdersTab() {
               const rest = restaurants.find((r) => r.id === o.restaurant_id);
               return (
                 <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs" dir="ltr">{o.order_number}</TableCell>
+                  <TableCell><span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-gradient-primary px-2 text-xs font-bold text-primary-foreground">{o.daily_number ?? "—"}</span></TableCell>
                   <TableCell>
                     <div className="font-medium">{o.customer_name}</div>
                     <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>

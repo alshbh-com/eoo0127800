@@ -28,7 +28,7 @@ const navItems: NavItem[] = [{ to: "/restaurant", label: "الطلبات", icon:
 
 interface City { id: string; name: string; delivery_price: number }
 interface Order {
-  id: string; order_number: string; customer_name: string; customer_phone: string;
+  id: string; order_number: string; daily_number: number | null; customer_name: string; customer_phone: string;
   customer_address: string; items_total: number; delivery_price: number; total: number;
   status: string; driver_id: string | null; created_at: string; notes: string | null;
 }
@@ -156,7 +156,7 @@ function Body() {
               <TableBody>
                 {orders.map((o) => (
                   <TableRow key={o.id}>
-                    <TableCell className="font-mono text-xs" dir="ltr">{o.order_number}</TableCell>
+                    <TableCell><span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-gradient-primary px-2 text-xs font-bold text-primary-foreground">{o.daily_number ?? "—"}</span></TableCell>
                     <TableCell>
                       <div className="font-medium">{o.customer_name}</div>
                       <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
