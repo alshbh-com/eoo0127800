@@ -159,7 +159,7 @@ function Body() {
         ))}
       </div>
 
-      <Tabs defaultValue="orders">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-card p-1 shadow-soft rounded-xl">
           <TabsTrigger value="orders"><LayoutDashboard className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
           <TabsTrigger value="products"><UtensilsCrossed className="ml-2 h-4 w-4" />القائمة</TabsTrigger>
