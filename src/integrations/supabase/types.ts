@@ -217,12 +217,14 @@ export type Database = {
           customer_address: string
           customer_name: string
           customer_phone: string
+          daily_number: number | null
           delivered_at: string | null
           delivery_price: number
           driver_id: string | null
           id: string
           items_total: number
           notes: string | null
+          order_date: string
           order_number: string
           restaurant_id: string
           status: Database["public"]["Enums"]["order_status"]
@@ -235,12 +237,14 @@ export type Database = {
           customer_address: string
           customer_name: string
           customer_phone: string
+          daily_number?: number | null
           delivered_at?: string | null
           delivery_price?: number
           driver_id?: string | null
           id?: string
           items_total?: number
           notes?: string | null
+          order_date?: string
           order_number?: string
           restaurant_id: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -253,12 +257,14 @@ export type Database = {
           customer_address?: string
           customer_name?: string
           customer_phone?: string
+          daily_number?: number | null
           delivered_at?: string | null
           delivery_price?: number
           driver_id?: string | null
           id?: string
           items_total?: number
           notes?: string | null
+          order_date?: string
           order_number?: string
           restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -288,6 +294,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
