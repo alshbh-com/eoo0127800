@@ -54,7 +54,7 @@ function Body() {
   const [cities, setCities] = useState<City[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [drivers, setDrivers] = useState<MapDriver[]>([]);
-  const [driverInfo, setDriverInfo] = useState<Record<string, { name: string; phone: string | null }>>({});
+  const [driverInfo, setDriverInfo] = useState<Record<string, { name: string; phone: string | null; user_id: string }>>({});
   const [chatTarget, setChatTarget] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("orders");
   const [open, setOpen] = useState(false);
