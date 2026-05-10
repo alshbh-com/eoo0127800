@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RestaurantRouteImport } from './routes/restaurant'
 import { Route as NoRoleRouteImport } from './routes/no-role'
 import { Route as LoginRouteImport } from './routes/login'
@@ -17,11 +16,6 @@ import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RestaurantRoute = RestaurantRouteImport.update({
   id: '/restaurant',
   path: '/restaurant',
@@ -60,7 +54,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
-  '/signup': typeof SignupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +62,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
-  '/signup': typeof SignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,27 +71,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
-  '/signup': typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/admin'
-    | '/driver'
-    | '/login'
-    | '/no-role'
-    | '/restaurant'
-    | '/signup'
+  fullPaths: '/' | '/admin' | '/driver' | '/login' | '/no-role' | '/restaurant'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/admin'
-    | '/driver'
-    | '/login'
-    | '/no-role'
-    | '/restaurant'
-    | '/signup'
+  to: '/' | '/admin' | '/driver' | '/login' | '/no-role' | '/restaurant'
   id:
     | '__root__'
     | '/'
@@ -108,7 +85,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/no-role'
     | '/restaurant'
-    | '/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,18 +94,10 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NoRoleRoute: typeof NoRoleRoute
   RestaurantRoute: typeof RestaurantRoute
-  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/restaurant': {
       id: '/restaurant'
       path: '/restaurant'
@@ -182,7 +150,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NoRoleRoute: NoRoleRoute,
   RestaurantRoute: RestaurantRoute,
-  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
