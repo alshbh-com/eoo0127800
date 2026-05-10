@@ -232,7 +232,7 @@ function Body() {
         </TabsContent>
 
         <TabsContent value="chat" className="mt-4">
-          <ChatPanel />
+          <ChatPanel initialContactId={chatTarget} />
         </TabsContent>
       </Tabs>
     </div>
