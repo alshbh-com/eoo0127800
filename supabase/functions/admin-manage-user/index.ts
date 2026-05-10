@@ -17,18 +17,17 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Missing auth" }, 401);
+    const token = authHeader.replace(/^Bearer\s+/i, "");
 
     const url = Deno.env.get("SUPABASE_URL")!;
-    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const caller = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
-    const { data: u } = await caller.auth.getUser();
-    if (!u.user) return json({ error: "Unauthorized" }, 401);
-    const { data: roleRows } = await caller.from("user_roles").select("role").eq("user_id", u.user.id);
+    const admin = createClient(url, service, { auth: { persistSession: false } });
+    const { data: u, error: uerr } = await admin.auth.getUser(token);
+    if (uerr || !u.user) return json({ error: "Unauthorized", detail: uerr?.message }, 401);
+    const { data: roleRows } = await admin.from("user_roles").select("role").eq("user_id", u.user.id);
     if (!roleRows?.some((r) => r.role === "admin")) return json({ error: "Forbidden" }, 403);
 
-    const admin = createClient(url, service, { auth: { persistSession: false } });
     const body = await req.json();
     const action = body.action as string;
 
