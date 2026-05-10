@@ -54,6 +54,9 @@ function Body() {
   const [cities, setCities] = useState<City[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [drivers, setDrivers] = useState<MapDriver[]>([]);
+  const [driverInfo, setDriverInfo] = useState<Record<string, { name: string; phone: string | null; user_id: string }>>({});
+  const [chatTarget, setChatTarget] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("orders");
   const [open, setOpen] = useState(false);
 
   useNotificationPermission();
@@ -69,12 +72,20 @@ function Body() {
   };
 
   const loadDrivers = async () => {
-    const { data } = await supabase.from("drivers").select("id, phone, is_online, current_lat, current_lng");
+    const { data } = await supabase.from("drivers").select("id, user_id, phone, is_online, current_lat, current_lng");
     if (!data) return;
+    const userIds = data.map((d) => d.user_id).filter(Boolean) as string[];
+    const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+    const nameMap = new Map((profs ?? []).map((p) => [p.id, p.full_name as string]));
+    const info: Record<string, { name: string; phone: string | null; user_id: string }> = {};
+    data.forEach((d) => {
+      info[d.id] = { name: nameMap.get(d.user_id) || d.phone || "مندوب", phone: d.phone, user_id: d.user_id };
+    });
+    setDriverInfo(info);
     setDrivers(
       data.filter((d) => d.current_lat != null && d.current_lng != null).map((d) => ({
         id: d.id, lat: Number(d.current_lat), lng: Number(d.current_lng),
-        label: d.phone ?? d.id.slice(0, 8), online: !!d.is_online,
+        label: info[d.id].name, online: !!d.is_online,
       })),
     );
   };
@@ -148,7 +159,7 @@ function Body() {
         ))}
       </div>
 
-      <Tabs defaultValue="orders">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-card p-1 shadow-soft rounded-xl">
           <TabsTrigger value="orders"><LayoutDashboard className="ml-2 h-4 w-4" />الطلبات</TabsTrigger>
           <TabsTrigger value="products"><UtensilsCrossed className="ml-2 h-4 w-4" />القائمة</TabsTrigger>
@@ -167,7 +178,7 @@ function Body() {
               </TableRow></TableHeader>
               <TableBody>
                 {orders.map((o) => {
-                  const drv = drivers.find((d) => d.id === o.driver_id);
+                  const info = o.driver_id ? driverInfo[o.driver_id] : null;
                   return (
                   <TableRow key={o.id}>
                     <TableCell><span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-gradient-primary px-2 text-sm font-bold text-primary-foreground shadow-soft">{o.daily_number ?? "—"}</span></TableCell>
@@ -176,7 +187,24 @@ function Body() {
                       <div className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</div>
                     </TableCell>
                     <TableCell className="max-w-[220px] truncate">{o.customer_address}</TableCell>
-                    <TableCell className="text-xs" dir="ltr">{drv ? drv.label : <span className="text-muted-foreground">— لم يُعيَّن</span>}</TableCell>
+                    <TableCell>
+                      {info ? (
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium">{info.name}</div>
+                          <div className="flex gap-1">
+                            {info.phone && (
+                              <Button asChild size="sm" variant="outline" className="h-7 px-2 text-xs">
+                                <a href={`tel:${info.phone}`}>اتصال</a>
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs"
+                              onClick={() => { setChatTarget(info.user_id); setActiveTab("chat"); }}>
+                              رسالة
+                            </Button>
+                          </div>
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">— لم يُعيَّن</span>}
+                    </TableCell>
                     <TableCell className="font-semibold">{Number(o.total).toFixed(2)}</TableCell>
                     <TableCell><Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge></TableCell>
                   </TableRow>
@@ -204,7 +232,7 @@ function Body() {
         </TabsContent>
 
         <TabsContent value="chat" className="mt-4">
-          <ChatPanel />
+          <ChatPanel initialContactId={chatTarget} />
         </TabsContent>
       </Tabs>
     </div>

@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
     if (!body.phone || !body.password || !body.role) return json({ error: "Missing fields" }, 400);
 
     const phoneDigits = body.phone.replace(/\D+/g, "");
-    const admin = createClient(url, service, { auth: { persistSession: false } });
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: phoneToEmail(phoneDigits),
