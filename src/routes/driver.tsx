@@ -201,13 +201,24 @@ function Body() {
                     <Badge className={STATUS_COLORS[o.status]}>{STATUS_AR[o.status] ?? o.status}</Badge>
                   </div>
                   <div className="mt-3 space-y-2 text-sm">
-                    <a href={`tel:${o.customer_phone}`} className="flex items-center gap-2 text-primary hover:underline" dir="ltr">
-                      <Phone className="h-4 w-4" />{o.customer_phone}
-                    </a>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button asChild size="sm" variant="outline" className="h-8">
+                        <a href={`tel:${o.customer_phone}`} dir="ltr"><Phone className="ml-1 h-3.5 w-3.5" />اتصال</a>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" className="h-8">
+                        <a href={`sms:${o.customer_phone}`} dir="ltr"><MessagesSquare className="ml-1 h-3.5 w-3.5" />SMS</a>
+                      </Button>
+                      <span className="text-xs text-muted-foreground" dir="ltr">{o.customer_phone}</span>
+                    </div>
                     <a href={mapsHref} target="_blank" rel="noreferrer" className="flex items-start gap-2 text-primary hover:underline">
                       <MapPin className="h-4 w-4 mt-0.5" /><span>{o.customer_address}</span>
                     </a>
-                    {o.notes && <p className="text-muted-foreground">{o.notes}</p>}
+                    {o.notes && (
+                      <div className="rounded-md bg-muted p-2 text-xs whitespace-pre-wrap">
+                        <div className="font-semibold mb-1">تفاصيل الطلب:</div>
+                        {o.notes}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
                     <span className="text-muted-foreground">المبلغ المستحق</span>
@@ -225,7 +236,7 @@ function Body() {
                   )}
                   {(o.status === "pending" || o.status === "accepted") && (
                     <div className="mt-3 grid grid-cols-2 gap-2">
-                      <Button className="bg-gradient-success shadow-pop" onClick={() => updateStatus(o.id, "preparing")}>قبول</Button>
+                      <Button className="bg-gradient-success shadow-pop" onClick={() => updateStatus(o.id, "preparing")}>شاهدت وبدأت التنفيذ</Button>
                       <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => rejectOrder(o.id)}>رفض</Button>
                     </div>
                   )}
