@@ -286,8 +286,10 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
   const [address, setAddress] = useState("");
   const [cityId, setCityId] = useState("");
   const [cart, setCart] = useState<Array<{ name: string; price: number; qty: number }>>([]);
+  const [productName, setProductName] = useState("");
+  const [productPrice, setProductPrice] = useState("");
   const [manualTotal, setManualTotal] = useState("");
-  const [notes, setNotes] = useState("");
+  const [driverNotes, setDriverNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
   const city = cities.find((c) => c.id === cityId);
@@ -304,12 +306,18 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
     });
   };
 
+  const addCustomProduct = () => {
+    if (!productName.trim()) return;
+    const price = Number(productPrice) || 0;
+    setCart((prev) => [...prev, { name: productName.trim(), price, qty: 1 }]);
+    setProductName(""); setProductPrice("");
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const itemNotes = cart.length > 0
-      ? cart.map((i) => `${i.name} × ${i.qty}`).join("، ") + (notes ? `\n${notes}` : "")
-      : notes;
+    const itemsLine = cart.length > 0 ? cart.map((i) => `${i.name} × ${i.qty}`).join("، ") : "";
+    const combined = [itemsLine, driverNotes && `📝 للمندوب: ${driverNotes}`].filter(Boolean).join("\n");
     const { error } = await supabase.from("orders").insert({
       restaurant_id: restaurantId,
       customer_name: name,
