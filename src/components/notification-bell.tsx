@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, Check, CheckCheck } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,9 @@ interface N { id: string; title: string; body: string | null; link: string | nul
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<N[]>([]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -32,8 +35,19 @@ export function NotificationBell() {
     if (!user) return;
     await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", user.id).is("read_at", null);
   };
-  const markOne = async (id: string) => {
-    await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+  const handleClick = async (n: N) => {
+    if (!n.read_at) {
+      await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", n.id);
+    }
+    setOpen(false);
+    if (n.link) {
+      try {
+        const url = n.link.startsWith("http") ? new URL(n.link).pathname + new URL(n.link).search : n.link;
+        navigate({ to: url });
+      } catch {
+        navigate({ to: n.link });
+      }
+    }
   };
 
   return (
