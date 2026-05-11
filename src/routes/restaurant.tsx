@@ -326,7 +326,7 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
       city_id: cityId || null,
       items_total: itemsTotal,
       delivery_price: Number(deliveryPrice),
-      notes: itemNotes || null,
+      notes: combined || null,
     });
     setLoading(false);
     if (error) return toast.error(error.message);
