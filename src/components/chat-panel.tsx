@@ -149,10 +149,10 @@ export function ChatPanel({ initialContactId }: { initialContactId?: string | nu
             {messages.map((m) => {
               const mine = m.sender_id === user?.id;
               return (
-                <div key={m.id} className={`flex ${mine ? "justify-start" : "justify-end"}`}>
-                  <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-soft ${mine ? "bg-primary text-primary-foreground" : "bg-card"}`}>
-                    <div>{m.body}</div>
-                    <div className={`mt-0.5 text-[9px] ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                  <div dir="auto" className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-soft ${mine ? "bg-primary text-primary-foreground" : "bg-card"}`}>
+                    <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                    <div dir="ltr" className={`mt-0.5 text-[9px] ${mine ? "text-primary-foreground/70 text-left" : "text-muted-foreground text-right"}`}>
                       {new Date(m.created_at).toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
