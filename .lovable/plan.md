@@ -1,45 +1,59 @@
-# خطة: إرسال إشعارات OneSignal تلقائياً (والتطبيق مقفول)
+# خطة: دعم إشعارات Median.co WebView (Native Push)
 
-الهدف: لما يدخل أي إشعار جديد في جدول `notifications`، يطلع Push Notification على موبايل المستخدم على طول، حتى لو التطبيق مقفول — **بدون ما تدخل لوحة Supabase أو تعمل أي شيء يدوي**.
+## الهدف
+تطبيقك Lovable شغّال على المتصفح، ولما تلفّه بـ Median.co كـ WebView، الإشعارات لازم تشتغل **native** عبر OneSignal Native Plugin (مش Web Push)، ويوصل نفس الإشعار لنفس المستخدم على كل أجهزته.
 
-## الفكرة
+## ما الذي سيتم تعديله في الكود
 
-هنخلي قاعدة البيانات نفسها (Postgres) هي اللي تنادي السيرفر تلقائياً كل ما يدخل إشعار جديد. ده باستخدام إضافة اسمها `pg_net` موجودة جاهزة في Supabase.
+### تحديث `src/lib/onesignal.ts`
+يكتشف البيئة تلقائياً ويستخدم الـ bridge المناسب:
+- **داخل Median WebView** → يستخدم `median.onesignal.*` (الـ native bridge اللي Median بيحقنه في `window`)
+- **متصفح عادي** → يستخدم `OneSignal` Web SDK (الحالي)
 
-## الخطوات
+نفس الدوال `osLogin(userId)` و `osLogout()` هتشتغل في الحالتين بدون تغيير في `use-auth.tsx`.
 
-### 1. تفعيل pg_net في قاعدة البيانات
-امتداد Postgres يسمح للـ DB تبعت طلبات HTTP لأي URL.
+### إضافة `src/lib/median.ts` (جديد)
+helper صغير يكتشف:
+- `isMedianApp()` — هل احنا جوة Median WebView؟ (بفحص `window.median` أو user-agent)
+- يضمن نستنى تحميل الـ bridge قبل ما ننده عليه
 
-### 2. تخزين السر (webhook secret) في إعدادات قاعدة البيانات
-عشان trigger الـ Postgres يقدر يبعت الـ secret في الـ header وتتأكد منه الـ endpoint. هيتخزن في `app_settings` كصف خاص (مش في الكود).
+## ما يجب عليك فعله **مرة واحدة** خارج الكود (دليل خطوة بخطوة)
 
-### 3. عمل دالة + trigger على جدول notifications
-كل ما يدخل صف جديد في `notifications`:
-- الـ trigger ينده `pg_net` يبعت POST request للـ URL:
-  `https://project--7111be33-b0c5-47c5-80a1-7a40bc65823a.lovable.app/api/public/notify-push`
-- بـ header `x-webhook-secret` = نفس السر
-- وفي الـ body: `user_id`, `title`, `body`, `link`
+سأكتب دليل عربي مفصّل في ملف `MEDIAN_SETUP.md` يشرح:
 
-### 4. الـ endpoint الجاهز فعلاً
-`/api/public/notify-push` (موجود من المرة اللي فاتت) هيستقبل الطلب، يتأكد من السر، ويبعت Push عبر OneSignal للمستخدم.
+### أ) Firebase (مجاني — لـ Android Push)
+1. ادخل https://console.firebase.google.com → Create project
+2. Add Android app → اكتب package name الخاص بتطبيق Median
+3. حمّل `google-services.json`
+4. خد **Server Key** من Project Settings → Cloud Messaging
+
+### ب) OneSignal Dashboard
+1. ادخل https://dashboard.onesignal.com → تطبيقك الموجود
+2. Settings → Platforms → **Google Android (FCM)**
+3. الصق الـ Firebase Server Key
+4. لـ iOS (لو محتاج لاحقاً): Settings → Apple iOS (APNs) — يتطلب Apple Developer Account
+
+### ج) Median.co Dashboard
+1. ادخل تطبيقك على median.co
+2. **Native Plugins → OneSignal**
+3. حط نفس الـ App ID: `13096a2e-b5f2-4d42-a446-02b83d93bbc5`
+4. اعمل Build جديد للتطبيق
 
 ## النتيجة
 
 ```text
-طلب جديد → DB trigger → pg_net → /api/public/notify-push → OneSignal → موبايل المستخدم
+طلب جديد → DB trigger → /api/public/notify-push → OneSignal → external_id ──┬→ Web Push (متصفح)
+                                                                              └→ Native Push (Median app: Android/iOS)
 ```
 
-كل ده أوتوماتيك. مفيش أي خطوة يدوية بعد ما توافق على الخطة.
-
-## تفاصيل تقنية
-
-- migration واحد: تفعيل `pg_net`، إنشاء جدول صغير `app_secrets` لتخزين السر (مع RLS تمنع أي قراءة من العملاء)، إنشاء الدالة `tg_push_onesignal()` و trigger `AFTER INSERT` على `notifications`.
-- السر هيتم توليده عشوائياً داخل migration نفسه (`gen_random_uuid()::text`) ويتخزن في `app_secrets`. نفس القيمة عوزينها في env var `ONESIGNAL_WEBHOOK_SECRET` — موجودة فعلاً، فهنحط نفس قيمة env var داخل الجدول في خطوة منفصلة.
-
-**ملاحظة مهمة**: عشان نضمن السر اللي في DB = السر اللي في env var، الأبسط أنّ migration تنشئ السر عشوائي وتخزنه، والـ endpoint يقرأ نفس السر من DB بدل env var. كده مفيش تعارض ولا نحتاج تدخّل منك.
+نفس المستخدم يوصله الإشعار سواء فاتح الموقع في المتصفح أو فاتح تطبيق Median أو حتى التطبيق مقفول — تلقائياً.
 
 ## ملفات هتتعدّل
 
-- migration جديد للـ DB (pg_net + جدول السر + الدالة + الـ trigger)
-- `src/routes/api/public/notify-push.ts` — يقرأ السر من DB بدل env var
+- `src/lib/onesignal.ts` (تحديث: detection + Median bridge fallback)
+- `src/lib/median.ts` (جديد: helper)
+- `MEDIAN_SETUP.md` (جديد: دليل عربي للخطوات اليدوية في Firebase + OneSignal + Median)
+
+## ملاحظة مهمة
+
+الـ backend (DB trigger + endpoint + OneSignal API call) **مش هيتغيّر إطلاقاً**. الإعداد اللي عملناه قبل كده شغّال زي ما هو لـ Web و Native معاً.
