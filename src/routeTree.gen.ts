@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicNotifyPushRouteImport } from './routes/api/public/notify-push'
 
 const RestaurantRoute = RestaurantRouteImport.update({
   id: '/restaurant',
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNotifyPushRoute = ApiPublicNotifyPushRouteImport.update({
+  id: '/api/public/notify-push',
+  path: '/api/public/notify-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
+  '/api/public/notify-push': typeof ApiPublicNotifyPushRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
+  '/api/public/notify-push': typeof ApiPublicNotifyPushRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +79,27 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/no-role': typeof NoRoleRoute
   '/restaurant': typeof RestaurantRoute
+  '/api/public/notify-push': typeof ApiPublicNotifyPushRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/driver' | '/login' | '/no-role' | '/restaurant'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/driver'
+    | '/login'
+    | '/no-role'
+    | '/restaurant'
+    | '/api/public/notify-push'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/driver' | '/login' | '/no-role' | '/restaurant'
+  to:
+    | '/'
+    | '/admin'
+    | '/driver'
+    | '/login'
+    | '/no-role'
+    | '/restaurant'
+    | '/api/public/notify-push'
   id:
     | '__root__'
     | '/'
@@ -85,6 +108,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/no-role'
     | '/restaurant'
+    | '/api/public/notify-push'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +118,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NoRoleRoute: typeof NoRoleRoute
   RestaurantRoute: typeof RestaurantRoute
+  ApiPublicNotifyPushRoute: typeof ApiPublicNotifyPushRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/notify-push': {
+      id: '/api/public/notify-push'
+      path: '/api/public/notify-push'
+      fullPath: '/api/public/notify-push'
+      preLoaderRoute: typeof ApiPublicNotifyPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NoRoleRoute: NoRoleRoute,
   RestaurantRoute: RestaurantRoute,
+  ApiPublicNotifyPushRoute: ApiPublicNotifyPushRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

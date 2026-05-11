@@ -286,8 +286,10 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
   const [address, setAddress] = useState("");
   const [cityId, setCityId] = useState("");
   const [cart, setCart] = useState<Array<{ name: string; price: number; qty: number }>>([]);
+  const [productName, setProductName] = useState("");
+  const [productPrice, setProductPrice] = useState("");
   const [manualTotal, setManualTotal] = useState("");
-  const [notes, setNotes] = useState("");
+  const [driverNotes, setDriverNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
   const city = cities.find((c) => c.id === cityId);
@@ -304,12 +306,18 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
     });
   };
 
+  const addCustomProduct = () => {
+    if (!productName.trim()) return;
+    const price = Number(productPrice) || 0;
+    setCart((prev) => [...prev, { name: productName.trim(), price, qty: 1 }]);
+    setProductName(""); setProductPrice("");
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const itemNotes = cart.length > 0
-      ? cart.map((i) => `${i.name} × ${i.qty}`).join("، ") + (notes ? `\n${notes}` : "")
-      : notes;
+    const itemsLine = cart.length > 0 ? cart.map((i) => `${i.name} × ${i.qty}`).join("، ") : "";
+    const combined = [itemsLine, driverNotes && `📝 للمندوب: ${driverNotes}`].filter(Boolean).join("\n");
     const { error } = await supabase.from("orders").insert({
       restaurant_id: restaurantId,
       customer_name: name,
@@ -318,7 +326,7 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
       city_id: cityId || null,
       items_total: itemsTotal,
       delivery_price: Number(deliveryPrice),
-      notes: itemNotes || null,
+      notes: combined || null,
     });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -354,6 +362,15 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
         </div>
       )}
 
+      <div className="space-y-2 rounded-md border p-2">
+        <Label className="text-xs">إضافة منتج بالاسم يدوياً</Label>
+        <div className="grid grid-cols-[1fr_120px_auto] gap-2">
+          <Input placeholder="اسم المنتج" value={productName} onChange={(e) => setProductName(e.target.value)} />
+          <Input placeholder="السعر" type="number" step="0.01" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} />
+          <Button type="button" variant="outline" onClick={addCustomProduct}>إضافة</Button>
+        </div>
+      </div>
+
       {cart.length > 0 && (
         <div className="rounded-md border p-2 space-y-1">
           {cart.map((i, idx) => (
@@ -377,7 +394,7 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
         <div className="flex justify-between"><span className="text-muted-foreground">سعر التوصيل</span><span>{Number(deliveryPrice).toFixed(2)}</span></div>
         <div className="flex justify-between font-bold text-lg text-primary border-t pt-1"><span>الإجمالي</span><span>{total.toFixed(2)}</span></div>
       </div>
-      <div className="space-y-1.5"><Label>ملاحظات إضافية</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+      <div className="space-y-1.5"><Label>تفاصيل / تعليمات للمندوب</Label><Textarea value={driverNotes} onChange={(e) => setDriverNotes(e.target.value)} placeholder="مثال: الدور الثالث، اطلب بدر قبل الصعود…" /></div>
       <DialogFooter><Button type="submit" disabled={loading || (itemsTotal === 0)} className="bg-gradient-primary shadow-pop">{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}إنشاء الطلب</Button></DialogFooter>
     </form>
   );
