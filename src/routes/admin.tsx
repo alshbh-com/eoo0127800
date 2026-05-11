@@ -795,15 +795,157 @@ function SettingsTab() {
   };
 
   return (
-    <Card className="max-w-xl p-6">
-      <form onSubmit={save} className="space-y-4">
-        <div><Label>اسم النظام</Label><Input value={appName} onChange={(e) => setAppName(e.target.value)} /></div>
-        <div><Label>العملة</Label><Input value={currency} onChange={(e) => setCurrency(e.target.value)} /></div>
-        <div><Label>نسبة العمولة %</Label><Input type="number" step="0.01" value={commission} onChange={(e) => setCommission(e.target.value)} dir="ltr" /></div>
-        <div><Label>هاتف الدعم</Label><Input value={supportPhone} onChange={(e) => setSupportPhone(e.target.value)} dir="ltr" /></div>
-        <Button type="submit" disabled={loading}>{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ</Button>
-      </form>
+    <div className="space-y-6">
+      <Card className="max-w-xl p-6">
+        <h3 className="mb-4 text-lg font-bold">إعدادات النظام</h3>
+        <form onSubmit={save} className="space-y-4">
+          <div><Label>اسم النظام</Label><Input value={appName} onChange={(e) => setAppName(e.target.value)} /></div>
+          <div><Label>العملة</Label><Input value={currency} onChange={(e) => setCurrency(e.target.value)} /></div>
+          <div><Label>نسبة العمولة %</Label><Input type="number" step="0.01" value={commission} onChange={(e) => setCommission(e.target.value)} dir="ltr" /></div>
+          <div><Label>هاتف الدعم</Label><Input value={supportPhone} onChange={(e) => setSupportPhone(e.target.value)} dir="ltr" /></div>
+          <Button type="submit" disabled={loading}>{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ</Button>
+        </form>
+      </Card>
+      <AdminsManager />
+    </div>
+  );
+}
+
+interface AdminRow { user_id: string; full_name: string; phone: string | null }
+
+function AdminsManager() {
+  const { user } = useAuth();
+  const [admins, setAdmins] = useState<AdminRow[]>([]);
+  const [open, setOpen] = useState(false);
+  const [resetUid, setResetUid] = useState<string | null>(null);
+  const [newPwd, setNewPwd] = useState("");
+
+  const load = async () => {
+    const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+    const ids = (roles ?? []).map((r) => r.user_id as string);
+    if (ids.length === 0) { setAdmins([]); return; }
+    const { data: profs } = await supabase.from("profiles").select("id, full_name, phone").in("id", ids);
+    setAdmins((profs ?? []).map((p) => ({ user_id: p.id as string, full_name: (p.full_name as string) ?? "", phone: (p.phone as string) ?? null })));
+  };
+  useEffect(() => { load(); }, []);
+
+  const remove = async (uid: string) => {
+    try {
+      const { data, error } = await invokeAdminFn("admin-manage-user", { action: "delete", user_id: uid });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      toast.success("تم الحذف");
+      load();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "فشل الحذف"); }
+  };
+
+  const resetPassword = async () => {
+    if (!resetUid || newPwd.length < 6) return;
+    try {
+      const { data, error } = await invokeAdminFn("admin-manage-user", { action: "reset_password", user_id: resetUid, password: newPwd });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      toast.success("تم تغيير كلمة المرور");
+      setResetUid(null); setNewPwd("");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "فشل"); }
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-lg font-bold">المسؤولون (Admins)</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm"><Plus className="ml-1 h-4 w-4" />إضافة مسؤول</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>إضافة مسؤول جديد</DialogTitle></DialogHeader>
+            <CreateAdminForm onDone={() => { setOpen(false); load(); }} />
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Table>
+        <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead>الهاتف</TableHead><TableHead className="text-left">إجراءات</TableHead></TableRow></TableHeader>
+        <TableBody>
+          {admins.map((a) => (
+            <TableRow key={a.user_id}>
+              <TableCell className="font-medium">{a.full_name || "—"}</TableCell>
+              <TableCell dir="ltr">{a.phone ?? "—"}</TableCell>
+              <TableCell className="text-left">
+                <div className="flex justify-end gap-1">
+                  <Button size="icon" variant="ghost" onClick={() => { setResetUid(a.user_id); setNewPwd(""); }} title="تغيير كلمة المرور">
+                    <KeyRound className="h-4 w-4" />
+                  </Button>
+                  {a.user_id !== user?.id && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>حذف المسؤول؟</AlertDialogTitle>
+                          <AlertDialogDescription>سيتم حذف الحساب نهائياً ولا يمكن التراجع.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => remove(a.user_id)}>حذف</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+          {admins.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-sm text-muted-foreground">لا يوجد مسؤولون</TableCell></TableRow>}
+        </TableBody>
+      </Table>
+
+      <Dialog open={!!resetUid} onOpenChange={(o) => { if (!o) { setResetUid(null); setNewPwd(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>تغيير كلمة المرور</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Label>كلمة المرور الجديدة</Label>
+            <Input type="password" minLength={6} value={newPwd} onChange={(e) => setNewPwd(e.target.value)} dir="ltr" />
+            <DialogFooter><Button onClick={resetPassword} disabled={newPwd.length < 6}>حفظ</Button></DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
+  );
+}
+
+function CreateAdminForm({ onDone }: { onDone: () => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data, error } = await invokeAdminFn("admin-create-user", {
+        phone, password, full_name: name, role: "admin",
+      });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      toast.success("تم إنشاء المسؤول");
+      onDone();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشلت العملية");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <div className="space-y-1.5"><Label>الاسم</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
+      <div className="space-y-1.5"><Label>رقم الهاتف</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07xxxxxxxx" dir="ltr" required /></div>
+      <div className="space-y-1.5"><Label>كلمة المرور</Label><Input type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required dir="ltr" /></div>
+      <DialogFooter>
+        <Button type="submit" disabled={loading}>{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}إنشاء</Button>
+      </DialogFooter>
+    </form>
   );
 }
 

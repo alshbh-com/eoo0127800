@@ -9,9 +9,9 @@ interface Body {
   phone: string;
   password: string;
   full_name: string;
-  role: "restaurant" | "driver";
+  role: "restaurant" | "driver" | "admin";
   city_id?: string | null;
-  name: string;
+  name?: string;
   address?: string | null;
 }
 
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     if (body.role === "restaurant") {
       await admin.from("restaurants").insert({
         user_id: newUserId,
-        name: body.name,
+        name: body.name ?? body.full_name,
         phone: phoneDigits,
         city_id: body.city_id ?? null,
         address: body.address ?? null,
@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
         city_id: body.city_id ?? null,
       });
     }
+    // role === "admin": no extra table needed
 
     return json({ ok: true, user_id: newUserId });
   } catch (e) {
