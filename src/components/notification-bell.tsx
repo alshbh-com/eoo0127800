@@ -51,7 +51,7 @@ export function NotificationBell() {
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -77,7 +77,7 @@ export function NotificationBell() {
           ) : items.map((n) => (
             <button
               key={n.id}
-              onClick={() => markOne(n.id)}
+              onClick={() => handleClick(n)}
               className={`flex w-full flex-col gap-0.5 border-b p-3 text-right text-sm transition-colors hover:bg-accent/50 ${
                 n.read_at ? "" : "bg-primary/5"
               }`}
