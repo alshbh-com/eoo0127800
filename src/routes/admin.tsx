@@ -451,6 +451,7 @@ function OrdersTab() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [driverNames, setDriverNames] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [restaurantFilter, setRestaurantFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -467,9 +468,22 @@ function OrdersTab() {
     Promise.all([
       supabase.from("restaurants").select("*"),
       supabase.from("drivers").select("*"),
-    ]).then(([r, d]) => {
+    ]).then(async ([r, d]) => {
       if (r.data) setRestaurants(r.data as Restaurant[]);
-      if (d.data) setDrivers(d.data as Driver[]);
+      if (d.data) {
+        const ds = d.data as Driver[];
+        setDrivers(ds);
+        const ids = ds.map((x) => x.user_id).filter(Boolean);
+        if (ids.length) {
+          const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+          const map: Record<string, string> = {};
+          ds.forEach((x) => {
+            const p = profs?.find((pp) => pp.id === x.user_id);
+            map[x.id] = p?.full_name || x.phone || x.id.slice(0, 6);
+          });
+          setDriverNames(map);
+        }
+      }
     });
     const ch = supabase.channel("admin-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, load).subscribe();
