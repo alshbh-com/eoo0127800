@@ -394,7 +394,7 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
         <div className="flex justify-between"><span className="text-muted-foreground">سعر التوصيل</span><span>{Number(deliveryPrice).toFixed(2)}</span></div>
         <div className="flex justify-between font-bold text-lg text-primary border-t pt-1"><span>الإجمالي</span><span>{total.toFixed(2)}</span></div>
       </div>
-      <div className="space-y-1.5"><Label>ملاحظات إضافية</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+      <div className="space-y-1.5"><Label>تفاصيل / تعليمات للمندوب</Label><Textarea value={driverNotes} onChange={(e) => setDriverNotes(e.target.value)} placeholder="مثال: الدور الثالث، اطلب بدر قبل الصعود…" /></div>
       <DialogFooter><Button type="submit" disabled={loading || (itemsTotal === 0)} className="bg-gradient-primary shadow-pop">{loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}إنشاء الطلب</Button></DialogFooter>
     </form>
   );
