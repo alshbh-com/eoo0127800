@@ -1,14 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-// Public endpoint called by Postgres trigger (pg_net) when a new notification row is inserted.
-// Sends an OneSignal push to the target user (identified by Supabase user id as external_id).
+// Called by a Postgres trigger (pg_net) whenever a row is inserted into
+// public.notifications. Sends the notification as an OneSignal push to the
+// target Supabase user (associated via external_id on the OneSignal client).
 export const Route = createFileRoute("/api/public/notify-push")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = request.headers.get("x-webhook-secret");
-        const expected = process.env.ONESIGNAL_WEBHOOK_SECRET;
-        if (!expected || secret !== expected) {
+        const provided = request.headers.get("x-webhook-secret");
+        if (!provided) return new Response("Unauthorized", { status: 401 });
+
+        // Read the canonical secret from the DB (kept in sync with the trigger)
+        const { data: secretRow } = await supabaseAdmin
+          .rpc("get_app_secret", { _key: "onesignal_webhook_secret" });
+        const expected = typeof secretRow === "string" ? secretRow : null;
+        if (!expected || provided !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
 

@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_secrets: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           app_name: string
@@ -492,6 +510,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_app_secret: { Args: { _key: string }; Returns: string }
       get_chat_contacts: {
         Args: never
         Returns: {
