@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { initOneSignal, osLogin, osLogout } from "@/lib/onesignal";
 
 export type AppRole = "admin" | "restaurant" | "driver";
 
