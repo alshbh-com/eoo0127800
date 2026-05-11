@@ -591,7 +591,7 @@ function OrdersTab() {
                       <SelectTrigger className="w-40 h-8"><SelectValue placeholder="تعيين…" /></SelectTrigger>
                       <SelectContent>
                         {drivers.filter((d) => d.is_active).map((d) =>
-                          <SelectItem key={d.id} value={d.id}>{d.phone ?? d.id.slice(0, 8)}</SelectItem>)}
+                          <SelectItem key={d.id} value={d.id}>{driverNames[d.id] ?? d.phone ?? d.id.slice(0, 8)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </TableCell>
