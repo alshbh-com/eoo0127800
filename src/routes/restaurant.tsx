@@ -362,6 +362,15 @@ function NewOrderForm({ restaurantId, cities, products, onDone }: { restaurantId
         </div>
       )}
 
+      <div className="space-y-2 rounded-md border p-2">
+        <Label className="text-xs">إضافة منتج بالاسم يدوياً</Label>
+        <div className="grid grid-cols-[1fr_120px_auto] gap-2">
+          <Input placeholder="اسم المنتج" value={productName} onChange={(e) => setProductName(e.target.value)} />
+          <Input placeholder="السعر" type="number" step="0.01" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} />
+          <Button type="button" variant="outline" onClick={addCustomProduct}>إضافة</Button>
+        </div>
+      </div>
+
       {cart.length > 0 && (
         <div className="rounded-md border p-2 space-y-1">
           {cart.map((i, idx) => (
